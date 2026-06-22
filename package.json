@@ -1,10 +1,10 @@
 {
   "name": "musetable",
   "version": "0.1.0",
-  "description": "Blackjack multijoueur — table de jeu virtuelle",
-  "main": "server.js",
+  "description": "Table de jeu virtuelle multijoueur",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/index.js"
   },
   "engines": {
     "node": "18.x"
