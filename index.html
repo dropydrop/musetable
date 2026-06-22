@@ -11,8 +11,9 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 #app{height:100%;display:flex;flex-direction:column}
 .screen{display:none;flex-direction:column;height:100%;width:100%;position:absolute;top:0;left:0}
 .screen.active{display:flex}
-input,button{font:inherit;border:none;outline:none;border-radius:8px}
+input,button,select{font:inherit;border:none;outline:none;border-radius:8px}
 input{background:var(--card);color:var(--text);padding:12px 16px;width:100%}
+select{background:var(--card);color:var(--text);padding:12px 16px;width:100%;cursor:pointer;-webkit-appearance:none;appearance:none}
 button{cursor:pointer;padding:14px 24px;font-weight:600;transition:.15s}
 button:active{transform:scale(.96)}
 .btn-primary{background:var(--accent);color:#fff}
@@ -42,6 +43,7 @@ button:active{transform:scale(.96)}
 .game-header .room-info{display:flex;align-items:center;gap:8px}
 .game-header .room-info .code-badge{background:var(--card);padding:4px 10px;border-radius:6px;font-weight:700;font-size:.9rem;letter-spacing:2px;color:var(--gold);cursor:pointer}
 .game-header .room-info .phase-badge{font-size:.75rem;color:var(--muted)}
+.game-header .room-info .phase-badge + .phase-badge{margin-left:4px}
 .game-header .tools{display:flex;gap:6px}
 .game-header .tools button{padding:6px 12px;font-size:.8rem;border-radius:6px;background:var(--card);color:var(--text)}
 .game-header .tools button.active{background:var(--gold);color:#111}
@@ -57,9 +59,12 @@ button:active{transform:scale(.96)}
 .player-area .p-header .p-score.blackjack{color:var(--gold)}
 .player-area .p-status{font-size:.8rem;color:var(--muted)}
 .cards-row{display:flex;gap:6px;flex-wrap:wrap}
-.card{width:64px;height:89px;border-radius:6px;overflow:hidden;flex-shrink:0;position:relative;background:#fff;display:flex;align-items:center;justify-content:center}
-.card img{width:100%;height:100%;object-fit:cover;display:block}
-.card .card-fallback{display:none;font-size:1.8rem;font-weight:700;color:#111}
+.card{width:64px;height:89px;border-radius:8px;flex-shrink:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;position:relative}
+.card-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
+.card-value{font-size:1.6rem;font-weight:800;line-height:1}
+.card-suit{font-size:1.2rem;line-height:1}
+.card.red{color:#d32f2f}
+.card.black{color:#222}
 /* Controls */
 .controls{flex-shrink:0;padding:16px;display:flex;gap:12px;justify-content:center;background:var(--surface);border-top:1px solid #222}
 .controls button{flex:1;max-width:180px;padding:16px;font-size:1.1rem;border-radius:12px;font-weight:700}
@@ -83,6 +88,8 @@ button:active{transform:scale(.96)}
   .board{flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:flex-start}
   .player-area{flex:0 1 280px}
   .card{width:80px;height:112px}
+  .card-value{font-size:2rem}
+  .card-suit{font-size:1.4rem}
 }
 /* Loader */
 .loader{display:inline-block;width:20px;height:20px;border:2px solid var(--muted);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite}
@@ -102,6 +109,12 @@ button:active{transform:scale(.96)}
       <h1>♠ MuseTable</h1>
       <p class="sub">table de jeu multijoueur</p>
       <input id="input-name" placeholder="Votre pseudo" maxlength="20">
+      <select id="input-game">
+        <option value="blackjack">♠ Blackjack</option>
+        <option value="tarot">🎴 Tarot Africain</option>
+        <option value="pyramide">🔺 Pyramide</option>
+        <option value="bizkit">🎲 Bizkit</option>
+      </select>
       <button class="btn-primary" id="btn-create">Créer une salle</button>
       <hr>
       <div class="row">
@@ -122,6 +135,7 @@ button:active{transform:scale(.96)}
       <p class="code-label">Code de la salle</p>
       <div class="code" id="room-code-display">----</div>
       <p style="color:var(--muted);font-size:.85rem">Partagez ce code avec les autres joueurs</p>
+      <p style="color:var(--muted);font-size:.85rem" id="room-game-type"></p>
       <div class="player-list" id="waiting-players"></div>
       <button class="btn-gold" id="btn-start">Lancer la partie</button>
       <button class="btn-outline" id="btn-leave">Quitter</button>
@@ -134,6 +148,7 @@ button:active{transform:scale(.96)}
       <div class="room-info">
         <span class="code-badge" id="game-code-badge">----</span>
         <span class="phase-badge" id="phase-badge">En attente</span>
+        <span class="phase-badge" id="game-type-badge"></span>
       </div>
       <div class="tools">
         <button id="btn-fullscreen" title="Plein écran">⛶</button>
@@ -147,6 +162,7 @@ button:active{transform:scale(.96)}
 
     <div class="controls" id="controls">
       <button class="btn-green" id="btn-hit">HIT</button>
+      <button class="btn-gold" id="btn-double" disabled>DOUBLER</button>
       <button class="btn-red" id="btn-stand">STAND</button>
     </div>
   </div>
@@ -167,7 +183,7 @@ button:active{transform:scale(.96)}
 <script>
 /* ============================================================
    MuseTable — Frontend Blackjack
-   JS vanilla, polling 2s, images deckofcardsapi + fallback emoji
+   JS vanilla, polling 2s, cartes en CSS pur
    ============================================================ */
 
 // --- Configuration
@@ -192,6 +208,7 @@ const screenLobby = $('screen-lobby');
 const screenRoom = $('screen-room');
 const screenGame = $('screen-game');
 const inputName = $('input-name');
+const inputGame = $('input-game');
 const inputCode = $('input-code');
 const inputJoinName = $('input-join-name');
 const btnCreate = $('btn-create');
@@ -203,9 +220,11 @@ const btnStart = $('btn-start');
 const btnLeave = $('btn-leave');
 const gameCodeBadge = $('game-code-badge');
 const phaseBadge = $('phase-badge');
+const gameTypeBadge = $('game-type-badge');
 const board = $('board');
 const gameStatus = $('game-status');
 const btnHit = $('btn-hit');
+const btnDouble = $('btn-double');
 const btnStand = $('btn-stand');
 const btnFullscreen = $('btn-fullscreen');
 const btnAnonyme = $('btn-anonyme');
@@ -224,15 +243,6 @@ function showScreen(id) {
   if (el) el.classList.add('active');
 }
 
-function getCardUrl(card) {
-  return `https://deckofcardsapi.com/static/img/${card.value}${card.suit}.png`;
-}
-
-function getCardEmoji(card) {
-  const suits = { S: '♠', H: '♥', D: '♦', C: '♣' };
-  return `${card.value}${suits[card.suit] || '?'}`;
-}
-
 function getCardValue(card) {
   if (card.value === 'A') return 'A';
   if (['J','Q','K'].includes(card.value)) return card.value;
@@ -247,24 +257,23 @@ function getSuitSymbol(card) {
 function createCardElement(card) {
   const div = document.createElement('div');
   div.className = 'card';
+  const isRed = card.suit === 'H' || card.suit === 'D';
+  div.classList.add(isRed ? 'red' : 'black');
 
-  const img = document.createElement('img');
-  img.src = getCardUrl(card);
-  img.alt = getCardEmoji(card);
-  img.loading = 'lazy';
+  const inner = document.createElement('div');
+  inner.className = 'card-inner';
 
-  const fallback = document.createElement('span');
-  fallback.className = 'card-fallback';
-  fallback.textContent = getCardEmoji(card);
+  const valSpan = document.createElement('span');
+  valSpan.className = 'card-value';
+  valSpan.textContent = getCardValue(card);
 
-  // Fallback si l'image ne charge pas
-  img.onerror = () => {
-    img.style.display = 'none';
-    fallback.style.display = 'flex';
-  };
+  const suitSpan = document.createElement('span');
+  suitSpan.className = 'card-suit';
+  suitSpan.textContent = getSuitSymbol(card);
 
-  div.appendChild(img);
-  div.appendChild(fallback);
+  inner.appendChild(valSpan);
+  inner.appendChild(suitSpan);
+  div.appendChild(inner);
   return div;
 }
 
@@ -272,6 +281,11 @@ function showToast(msg, duration = 3000) {
   toast.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+function getGameTypeLabel(type) {
+  const labels = { blackjack: '♠ Blackjack', tarot: '🎴 Tarot Africain', pyramide: '🔺 Pyramide', bizkit: '🎲 Bizkit' };
+  return labels[type] || type || 'Blackjack';
 }
 
 // --- API
@@ -357,9 +371,12 @@ function stopPolling() {
 function renderGameState(gs) {
   if (!gs) return;
 
-  // Badge phase
+  // Badges
   const phaseLabels = { waiting: 'En attente', playing: 'En cours', finished: 'Terminée' };
   phaseBadge.textContent = phaseLabels[gs.phase] || gs.phase;
+  gameTypeBadge.textContent = getGameTypeLabel(gs.gameType);
+  const roomGameType = $('room-game-type');
+  if (roomGameType) roomGameType.textContent = 'Jeu : ' + getGameTypeLabel(gs.gameType);
 
   // Board : afficher chaque joueur
   board.innerHTML = '';
@@ -461,6 +478,7 @@ function updateControls(gs) {
 
   if (state.phase === 'finished') {
     btnHit.disabled = true;
+    btnDouble.disabled = true;
     btnStand.disabled = true;
     return;
   }
@@ -468,10 +486,12 @@ function updateControls(gs) {
   btnHit.disabled = !isMyTurn;
   btnStand.disabled = !isMyTurn;
 
-  // Désactiver HIT si le joueur a déjà 21
   const me = gs.players[state.playerId];
+  btnDouble.disabled = !isMyTurn || !me || me.hand.length !== 2;
+
   if (me && me.score >= 21) {
     btnHit.disabled = true;
+    btnDouble.disabled = true;
   }
 }
 
@@ -502,7 +522,7 @@ function showResult(gs) {
 btnCreate.addEventListener('click', async () => {
   const name = inputName.value.trim() || 'Anonyme';
   try {
-    const createRes = await api('POST', '/api/create-room');
+    const createRes = await api('POST', '/api/create-room', { gameType: inputGame.value });
     const code = createRes.roomCode;
     const joinRes = await api('POST', '/api/join-room', { roomCode: code, playerName: name });
     state.roomCode = code;
@@ -555,7 +575,12 @@ btnStart.addEventListener('click', async () => {
   }
 });
 
-btnLeave.addEventListener('click', () => {
+btnLeave.addEventListener('click', async () => {
+  if (state.roomCode) {
+    try {
+      await api('POST', '/api/leave-room', { roomCode: state.roomCode, playerId: state.playerId });
+    } catch (e) { /* silencieux */ }
+  }
   stopPolling();
   showLobby();
 });
@@ -575,6 +600,15 @@ btnStand.addEventListener('click', async () => {
   if (!state.roomCode || !state.playerId) return;
   try {
     await api('POST', '/api/stand', { roomCode: state.roomCode, playerId: state.playerId });
+  } catch (e) {
+    showToast('Erreur : ' + e.message);
+  }
+});
+
+btnDouble.addEventListener('click', async () => {
+  if (!state.roomCode || !state.playerId) return;
+  try {
+    await api('POST', '/api/double', { roomCode: state.roomCode, playerId: state.playerId });
   } catch (e) {
     showToast('Erreur : ' + e.message);
   }

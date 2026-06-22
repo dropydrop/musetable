@@ -119,12 +119,13 @@ module.exports = async (req, res) => {
     // POST /api/create-room
     if (path === '/api/create-room' && req.method === 'POST') {
       const code = generateRoomCode();
+      const { gameType } = await parseBody();
       games[code] = {
         players: {},
         deck: createShuffledDeck(),
         currentTurn: null,
         phase: 'waiting',
-        gameType: 'blackjack',
+        gameType: gameType || 'blackjack',
         turnIndex: 0,
         playerOrder: [],
         winners: null,
@@ -140,7 +141,7 @@ module.exports = async (req, res) => {
       const room = games[roomCode];
       if (!room) { res.status(404).json({ success: false, error: 'Salle introuvable' }); return; }
       if (room.phase !== 'waiting') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
-      if (Object.keys(room.players).length >= 6) { res.status(400).json({ success: false, error: 'Salle pleine (max 6)' }); return; }
+      if (Object.keys(room.players).length >= 10) { res.status(400).json({ success: false, error: 'Salle pleine (max 10)' }); return; }
 
       const id = generatePlayerId();
       room.players[id] = {
@@ -221,6 +222,49 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // POST /api/double
+    if (path === '/api/double' && req.method === 'POST') {
+      const { roomCode, playerId } = await parseBody();
+      const room = games[roomCode];
+      if (!room) { res.status(404).json({ success: false, error: 'Salle introuvable' }); return; }
+      if (room.phase !== 'playing') { res.status(400).json({ success: false, error: 'Partie pas en cours' }); return; }
+      if (room.currentTurn !== playerId) { res.status(400).json({ success: false, error: 'Pas votre tour' }); return; }
+
+      const player = room.players[playerId];
+      if (!player) { res.status(404).json({ success: false, error: 'Joueur introuvable' }); return; }
+
+      // Double = 1 carte + stand automatique (uniquement sur les 2 premières cartes)
+      if (player.hand.length !== 2) { res.status(400).json({ success: false, error: 'Double uniquement sur les 2 premières cartes' }); return; }
+
+      player.hand.push(room.deck.pop());
+      player.score = calculateScore(player.hand);
+      player.stand = true;
+      player.isActive = false;
+      nextTurn(room);
+
+      res.status(200).json({ success: true, score: player.score });
+      return;
+    }
+
+    // POST /api/leave-room
+    if (path === '/api/leave-room' && req.method === 'POST') {
+      const { roomCode, playerId } = await parseBody();
+      const room = games[roomCode];
+      if (!room) { res.status(404).json({ success: false, error: 'Salle introuvable' }); return; }
+
+      if (playerId) {
+        delete room.players[playerId];
+      }
+
+      // Nettoyer la salle si vide
+      if (Object.keys(room.players).length === 0) {
+        delete games[roomCode];
+      }
+
+      res.status(200).json({ success: true });
+      return;
+    }
+
     // GET /api/game-state
     if (path === '/api/game-state' && req.method === 'GET') {
       const roomCode = url.searchParams.get('room');
@@ -284,3 +328,15 @@ module.exports = async (req, res) => {
     res.status(500).json({ success: false, error: 'Erreur serveur: ' + e.message });
   }
 };
+
+// Démarrage local (node api/index.js) — Vercel ignore ce bloc
+if (require.main === module) {
+  const http = require('http');
+  const PORT = process.env.PORT || 3000;
+  const server = http.createServer((req, res) => {
+    module.exports(req, res);
+  });
+  server.listen(PORT, () => {
+    console.log(`♠ MuseTable — http://localhost:${PORT}`);
+  });
+}
