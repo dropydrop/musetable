@@ -2,6 +2,13 @@
 // Version optimisée Vercel (serverless)
 // Routes : /api/xxx
 
+const {
+  createShuffledDeck,
+  calculateScore,
+  nextTurn,
+  checkGameFinished
+} = require('../game-logic.js');
+
 const games = {};
 
 function generateRoomCode() {
@@ -14,83 +21,6 @@ function generateRoomCode() {
 
 function generatePlayerId() {
   return Math.random().toString(36).substring(2, 10);
-}
-
-function createShuffledDeck() {
-  const suits = ['S', 'H', 'D', 'C'];
-  const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-  const deck = [];
-  for (const suit of suits) {
-    for (const value of values) {
-      deck.push({ suit, value });
-    }
-  }
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  return deck;
-}
-
-function calculateScore(hand) {
-  let score = 0;
-  let aces = 0;
-  for (const card of hand) {
-    if (card.value === 'A') { aces++; score += 11; }
-    else if (['J', 'Q', 'K'].includes(card.value)) { score += 10; }
-    else { score += parseInt(card.value); }
-  }
-  while (score > 21 && aces > 0) {
-    score -= 10;
-    aces--;
-  }
-  return score;
-}
-
-function nextTurn(room) {
-  room.turnIndex++;
-  if (room.turnIndex >= room.playerOrder.length) {
-    room.currentTurn = null;
-    checkGameFinished(room);
-  } else {
-    room.currentTurn = room.playerOrder[room.turnIndex];
-  }
-}
-
-function checkGameFinished(room) {
-  const players = Object.values(room.players);
-  const allDone = players.every(p => !p.isActive || p.stand);
-  if (!allDone || players.length === 0) return;
-
-  room.phase = 'finished';
-  let bestScore = 0;
-  let winners = [];
-
-  for (const p of players) {
-    p.score = calculateScore(p.hand);
-    if (p.score <= 21 && p.score > bestScore) {
-      bestScore = p.score;
-      winners = [p.name];
-    } else if (p.score <= 21 && p.score === bestScore) {
-      winners.push(p.name);
-    }
-  }
-
-  room.winners = winners.length > 0 ? winners : ['Personne (tous ont dépassé 21)'];
-  room.result = bestScore;
-}
-
-function jsonResponse(data, status = 200) {
-  return {
-    statusCode: status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    },
-    body: JSON.stringify(data)
-  };
 }
 
 // --- Handler Vercel

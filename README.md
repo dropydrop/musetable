@@ -61,6 +61,30 @@ npm start
 
 ---
 
+## 🔬 Tests
+
+Tests unitaires avec le module natif `node:test` (Node.js 18+).
+
+```bash
+npm test
+```
+
+### Périmètre couvert
+
+- **Logique métier** : calcul des scores Blackjack, création du paquet, gestion des tours, détection des gagnants
+- **Routes API** : création/joindre/démarrer/piocher/rester/doubler/quitter/réinitialiser, validation des erreurs (400/404)
+
+### Structure
+
+```
+tests/
+└── unit/
+    ├── game-logic.test.js   # Tests des fonctions pures (game-logic.js)
+    └── api.test.js          # Tests des routes API (mock req/res)
+```
+
+---
+
 ## 📦 Dépendances
 
 - **Aucune** ! C'est du vanilla JavaScript, tout est inclus.

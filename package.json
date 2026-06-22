@@ -4,7 +4,8 @@
   "description": "Table de jeu virtuelle multijoueur",
   "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "node api/index.js",
+    "test": "node --test"
   },
   "engines": {
     "node": "24.x"
