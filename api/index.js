@@ -12,6 +12,7 @@ const {
 
 const blackjack = require('./handlers/blackjack.js');
 const free = require('./handlers/free.js');
+const bizkit = require('./handlers/bizkit.js');
 
 const games = {};
 
@@ -84,7 +85,7 @@ module.exports = async (req, res) => {
       if (path === '/api/join-room' || path === '/api/leave-room' || path === '/api/game-state' ||
           path === '/api/reset' || path === '/api/start-game' || path === '/api/hit' ||
           path === '/api/stand' || path === '/api/double' ||
-          path.startsWith('/api/free/')) {
+          path.startsWith('/api/free/') || path.startsWith('/api/bizkit/')) {
         res.status(404).json({ success: false, error: 'Salle introuvable' });
         return;
       }
@@ -216,6 +217,19 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/free/reset' && req.method === 'POST') {
         await free.reset(room, body, res, games); return;
+      }
+    }
+
+    // --- Routes spécifiques au Bizkit ---
+    if (room.gameType === 'bizkit') {
+      if (path === '/api/start-game' && req.method === 'POST') {
+        await bizkit.startGame(room, body, res, games); return;
+      }
+      if (path === '/api/bizkit/roll' && req.method === 'POST') {
+        await bizkit.roll(room, body, res, games); return;
+      }
+      if (path === '/api/bizkit/next' && req.method === 'POST') {
+        await bizkit.next(room, body, res, games); return;
       }
     }
 

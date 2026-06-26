@@ -121,6 +121,9 @@ window.switchGameMode = function(gameType) {
   if (gameType === 'free' && window.freeInit) {
     window.freeInit();
   }
+  if (gameType === 'bizkit' && window.bizkitInit) {
+    window.bizkitInit();
+  }
 };
 
 // --- Polling
@@ -158,7 +161,8 @@ window.pollGameState = async function() {
     // Dispatch vers le renderer du mode de jeu actif
     const renderers = {
       blackjack: window.blackjackRenderer,
-      free: window.freeRenderer
+      free: window.freeRenderer,
+      bizkit: window.bizkitRenderer
     };
     const fn = renderers[gs.gameType];
     if (fn) fn(gs);
