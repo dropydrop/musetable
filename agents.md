@@ -1,6 +1,40 @@
 markdown
 # MuseTable - Agent Guide
 
+## 📋 Vision Globale
+
+MuseTable est architecturé autour du **mode Libre** comme cœur du projet :
+- **Mode Libre** — manipulation libre des cartes et dés, sans règles. Le terrain de jeu universel.
+- **Jeux** — extensions optionnelles qui ajoutent des règles (Blackjack, Tarot, Pyramide, Bizkit).
+
+Chaque jeu est indépendant : son propre handler API, sa propre logique métier, ses propres contrôles frontend.
+Le routeur (`api/index.js`) dispatch vers le bon handler selon le `gameType` de la salle.
+
+### Structure modulaire
+
+```
+api/
+├── index.js                 # Routeur : routes communes + dispatch
+└── handlers/
+    ├── free.js               # Mode Libre
+    ├── blackjack.js           # Blackjack
+    ├── tarot.js               # (à implémenter)
+    ├── pyramide.js            # (à implémenter)
+    └── bizkit.js              # (à implémenter)
+
+game-logic/
+├── common.js                 # Fonctions partagées (deck, dés, ID)
+├── blackjack.js              # Règles Blackjack (score, tour, victoire)
+└── free.js                   # Logique Libre (piocher, poser, dés)
+
+public/
+├── index.html                # Frontend SPA
+└── js/
+    ├── common.js             # Partagé (API, polling, navigation)
+    ├── game-blackjack.js     # Rendu + contrôles Blackjack
+    └── game-free.js          # Rendu + contrôles Libre
+```
+
 ## 📋 Contexte
 Table de jeu virtuelle cross-device. Une URL, sans installation, 1-10 joueurs sur mobiles/tablettes.
 

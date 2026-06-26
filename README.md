@@ -43,21 +43,47 @@ npm start
 | Élément | Technologie |
 |---------|-------------|
 | **Frontend** | HTML/CSS/JS (vanilla) |
-| **Backend** | Node.js |
+| **Backend** | Node.js (routeur + handlers) |
 | **Hébergement** | Vercel (Plan Hobby) |
 | **Stockage** | Mémoire (objet global) |
 | **Temps réel** | Polling (2-3s) |
+
+### Structure
+
+```
+api/
+├── index.js                   # Routeur (routes communes + dispatch)
+└── handlers/
+    ├── free.js                # Mode Libre
+    ├── blackjack.js            # Blackjack
+    ├── tarot.js                # (à implémenter)
+    ├── pyramide.js             # (à implémenter)
+    └── bizkit.js               # (à implémenter)
+
+game-logic/
+├── common.js                  # Fonctions partagées (deck, dés, ID)
+├── blackjack.js               # Règles Blackjack
+└── free.js                    # Logique Libre
+
+public/
+├── index.html                 # Frontend SPA
+└── js/
+    ├── common.js              # Partagé (API, polling, navigation)
+    ├── game-blackjack.js      # Rendu + contrôles Blackjack
+    └── game-free.js           # Rendu + contrôles Libre
+```
 
 ---
 
 ## 🎮 Jeux Supportés
 
-| Jeu | Type | Joueurs |
-|-----|------|---------|
-| Blackjack | Cartes | 1-6 |
-| Tarot Africain | Cartes (atouts) | 1-6 |
-| Pyramide | Cartes (alcool) | 2-10 |
-| Bizkit | Dés (alcool) | 2-10 |
+| Jeu | Type | Joueurs | Statut |
+|-----|------|---------|--------|
+| 🃏 Libre | Cartes/Dés | 1-10 | ✅ Fonctionnel |
+| ♠ Blackjack | Cartes | 1-6 | ✅ Fonctionnel |
+| 🎴 Tarot Africain | Cartes (atouts) | 1-6 | 📝 À implémenter |
+| 🔺 Pyramide | Cartes (alcool) | 2-10 | 📝 À implémenter |
+| 🎲 Bizkit | Dés (alcool) | 2-10 | 📝 À implémenter |
 
 ---
 
@@ -72,6 +98,7 @@ npm test
 ### Périmètre couvert
 
 - **Logique métier** : calcul des scores Blackjack, création du paquet, gestion des tours, détection des gagnants
+- **Mode Libre** : piocher/poser/retourner/reprendre des cartes, lancer dés, mélanger, distribuer
 - **Routes API** : création/joindre/démarrer/piocher/rester/doubler/quitter/réinitialiser, validation des erreurs (400/404)
 
 ### Structure
@@ -80,7 +107,8 @@ npm test
 tests/
 └── unit/
     ├── game-logic.test.js   # Tests des fonctions pures (game-logic.js)
-    └── api.test.js          # Tests des routes API (mock req/res)
+    ├── api.test.js          # Tests des routes API (mock req/res)
+    └── free.test.js         # Tests du mode Libre
 ```
 
 ---
@@ -93,13 +121,15 @@ tests/
 
 ## 📝 Roadmap
 
-- [ ] Interface mobile-first
-- [ ] Création de salle (code 4 chiffres)
-- [ ] 1 à 10 joueurs
-- [ ] Mélanger/Distribuer/Jouer
-- [ ] Plateau public fullscreen
-- [ ] Mode anonymisé
-- [ ] Blackjack (MVP)
+- [x] Interface mobile-first
+- [x] Création de salle (code 4 chiffres)
+- [x] 1 à 10 joueurs
+- [x] Mélanger/Distribuer/Jouer
+- [x] Plateau public fullscreen
+- [x] Mode anonymisé
+- [x] Mode Libre (cartes + dés)
+- [x] Blackjack (MVP)
+- [x] Architecture modulaire (handlers + routeur)
 - [ ] Tarot Africain
 - [ ] Pyramide
 - [ ] Bizkit
