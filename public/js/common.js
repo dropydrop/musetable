@@ -1,4 +1,4 @@
-/* common.js — Fonctions partagées MuseTable (frontend) */
+﻿/* common.js — Fonctions partagées MuseTable (frontend) */
 
 // --- Configuration
 window.API_BASE = window.location.origin;
@@ -55,10 +55,13 @@ window.getSuitSymbol = function(card) {
 window.createCardElement = function(card, faceUp) {
   const div = document.createElement('div');
   div.className = 'card';
-  if (faceUp === false) {
-    div.style.background = '#2a2a4a';
-    div.style.boxShadow = '0 2px 6px rgba(0,0,0,.5)';
-    div.innerHTML = '';
+  if (faceUp === false || card.faceDown === true) {
+    div.style.background = 'linear-gradient(135deg, #1a237e, #0d47a1)';
+    div.style.border = '2px solid #fff';
+    div.style.color = '#fff';
+    div.style.fontSize = '2rem';
+    div.style.fontWeight = '700';
+    div.innerHTML = '<span style="opacity:0.25;letter-spacing:2px">♠♥♦♣</span>';
     return div;
   }
   const isRed = card.suit === 'H' || card.suit === 'D';

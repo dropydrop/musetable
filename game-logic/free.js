@@ -1,4 +1,4 @@
-// game-logic/free.js — Logique du mode libre (sans règles)
+﻿// game-logic/free.js — Logique du mode libre (sans règles)
 // Actions : piocher, poser, retourner, reprendre, lancer dés, mélanger, distribuer
 
 /**
@@ -72,6 +72,22 @@ function pickupCard(room, playerId, cardIndex) {
 }
 
 /**
+ * Retourne une carte dans la main d'un joueur (toggle faceDown)
+ * @param {object} room
+ * @param {string} playerId
+ * @param {number} cardIndex
+ * @returns {{ success: boolean, card: object }}
+ */
+function flipHandCard(room, playerId, cardIndex) {
+  const player = room.players[playerId];
+  if (!player) return { success: false, error: 'Joueur introuvable' };
+  if (cardIndex < 0 || cardIndex >= player.hand.length) return { success: false, error: 'Carte invalide' };
+  const card = player.hand[cardIndex];
+  card.faceDown = !card.faceDown;
+  return { success: true, card };
+}
+
+/**
  * Lance X dés (délègue à common)
  * @param {number} count
  * @param {number} [faces=6]
@@ -119,6 +135,7 @@ module.exports = {
   playCard,
   flipCard,
   pickupCard,
+  flipHandCard,
   rollDice,
   shuffleDeck,
   dealCards

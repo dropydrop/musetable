@@ -1,5 +1,36 @@
 /* game-free.js — Rendu et contrôles du mode Libre */
 
+// --- Helpers d'interactions tactiles
+function addLongPress(el, onLongPress, onClick) {
+  let timer = null;
+  el.addEventListener('touchstart', (e) => {
+    timer = setTimeout(() => {
+      timer = null;
+      e.preventDefault();
+      onLongPress();
+    }, 500);
+  });
+  el.addEventListener('touchend', () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+  });
+  el.addEventListener('touchmove', () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+  });
+  let pendingClick = false;
+  el.addEventListener('click', (e) => {
+    if (pendingClick) { pendingClick = false; return; }
+    pendingClick = true;
+    setTimeout(() => {
+      if (pendingClick) { pendingClick = false; onClick(); }
+    }, 300);
+  });
+  el.addEventListener('dblclick', (e) => {
+    pendingClick = false;
+    e.preventDefault();
+    onLongPress();
+  });
+}
+
 window.freeRenderer = function(gs) {
   if (!gs) return;
   window.dom['phase-badge'].textContent = 'Libre';
@@ -31,11 +62,11 @@ window.freeRenderer = function(gs) {
       const wrapper = document.createElement('div');
       if (!window.state.isSpectator) {
         wrapper.style.cursor = 'pointer';
-        wrapper.title = card.faceUp ? 'Cliquer : reprendre' : 'Cliquer : retourner';
-        wrapper.addEventListener('click', () => {
-          if (card.faceUp) pickupCard(i);
-          else flipCard(i);
-        });
+        wrapper.title = 'Cliquer : reprendre · Double-clic : retourner';
+        addLongPress(wrapper,
+          () => flipCard(i),
+          () => pickupCard(i)
+        );
       }
       wrapper.appendChild(window.createCardElement(card, card.faceUp));
       cardsRow.appendChild(wrapper);
@@ -86,8 +117,11 @@ window.freeRenderer = function(gs) {
         const wrapper = document.createElement('div');
         if (id === myId && !window.state.isSpectator) {
           wrapper.style.cursor = 'pointer';
-          wrapper.title = 'Poser sur le plateau';
-          wrapper.addEventListener('click', () => playCard(i));
+          wrapper.title = 'Clic : poser · Double-clic : retourner';
+          addLongPress(wrapper,
+            () => flipHandCard(i),
+            () => playCard(i)
+          );
         }
         wrapper.appendChild(window.createCardElement(card));
         cardsRow.appendChild(wrapper);
@@ -106,10 +140,11 @@ window.freeRenderer = function(gs) {
 function setFreeControls() {
   window.dom.controls.innerHTML = '';
   const btns = [
-    { id:'btn-free-draw', text:'🃏 Piocher', cls:'btn-primary', action: drawCards },
-    { id:'btn-free-deal', text:'♠ Distribuer', cls:'btn-green', action: dealCards },
-    { id:'btn-free-roll', text:'🎲 Dés', cls:'btn-gold', action: rollDice },
-    { id:'btn-free-shuffle', text:'🔀 Mélanger', cls:'btn-outline', action: shuffleDeck }
+    { id:'btn-free-draw', text:'🃏 +1', cls:'btn-primary', action: drawCards },
+    { id:'btn-free-deal', text:'♠ 1 chacun', cls:'btn-green', action: dealCards },
+    { id:'btn-free-roll', text:'🎲 2 dés', cls:'btn-gold', action: rollDice },
+    { id:'btn-free-shuffle', text:'🔀 Mélanger', cls:'btn-outline', action: shuffleDeck },
+    { id:'btn-free-reset', text:'🔄 Reset', cls:'btn-outline', action: resetGame }
   ];
   btns.forEach(b => {
     const btn = document.createElement('button');
@@ -123,43 +158,82 @@ function setFreeControls() {
 
 async function drawCards() {
   if (!window.state.roomCode || !window.state.playerId) return;
-  try { await window.api('POST', '/api/free/draw', { roomCode: window.state.roomCode, playerId: window.state.playerId, count: 1 }); }
+  try {
+    const res = await window.api('POST', '/api/free/draw', { roomCode: window.state.roomCode, playerId: window.state.playerId, count: 1 });
+    window.showToast(res.cards.length + ' carte(s) piochée(s)');
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
 async function dealCards() {
   if (!window.state.roomCode) return;
-  try { await window.api('POST', '/api/free/deal', { roomCode: window.state.roomCode, count: 2 }); }
+  try {
+    await window.api('POST', '/api/free/deal', { roomCode: window.state.roomCode, count: 1 });
+    window.showToast('1 carte distribuée à chaque joueur');
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
 async function rollDice() {
   if (!window.state.roomCode) return;
-  try { await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode, count: 2 }); }
+  try {
+    const res = await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode, count: 2 });
+    window.showToast('🎲 ' + res.results.join(' · '));
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
 async function shuffleDeck() {
   if (!window.state.roomCode) return;
-  try { await window.api('POST', '/api/free/shuffle', { roomCode: window.state.roomCode }); }
+  try {
+    await window.api('POST', '/api/free/shuffle', { roomCode: window.state.roomCode });
+    window.showToast('Deck mélangé');
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
 async function playCard(cardIndex) {
   if (!window.state.roomCode || !window.state.playerId) return;
-  try { await window.api('POST', '/api/free/play', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex }); }
+  try {
+    await window.api('POST', '/api/free/play', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex });
+    window.showToast('Carte posée');
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
 async function flipCard(cardIndex) {
   if (!window.state.roomCode) return;
-  try { await window.api('POST', '/api/free/flip', { roomCode: window.state.roomCode, cardIndex }); }
+  try {
+    await window.api('POST', '/api/free/flip', { roomCode: window.state.roomCode, cardIndex });
+    window.showToast('Carte retournée');
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
 async function pickupCard(cardIndex) {
   if (!window.state.roomCode || !window.state.playerId) return;
-  try { await window.api('POST', '/api/free/pickup', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex }); }
+  try {
+    await window.api('POST', '/api/free/pickup', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex });
+    window.showToast('Carte reprise');
+  }
+  catch (e) { window.showToast('Erreur : ' + e.message); }
+}
+
+async function flipHandCard(cardIndex) {
+  if (!window.state.roomCode || !window.state.playerId) return;
+  try {
+    await window.api('POST', '/api/free/flip-hand', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex });
+    window.showToast('Carte retournée');
+  }
+  catch (e) { window.showToast('Erreur : ' + e.message); }
+}
+
+async function resetGame() {
+  if (!window.state.roomCode) return;
+  try {
+    await window.api('POST', '/api/free/reset', { roomCode: window.state.roomCode });
+    window.showToast('Table réinitialisée');
+  }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 

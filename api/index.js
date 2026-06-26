@@ -211,6 +211,12 @@ module.exports = async (req, res) => {
       if (path === '/api/free/deal' && req.method === 'POST') {
         await free.deal(room, body, res, games); return;
       }
+      if (path === '/api/free/flip-hand' && req.method === 'POST') {
+        await free.flipHand(room, body, res, games); return;
+      }
+      if (path === '/api/free/reset' && req.method === 'POST') {
+        await free.reset(room, body, res, games); return;
+      }
     }
 
     res.status(404).json({ success: false, error: 'Route non trouvée' });
