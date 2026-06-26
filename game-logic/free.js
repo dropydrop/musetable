@@ -34,7 +34,12 @@ function playCard(room, playerId, cardIndex, faceUp) {
   if (cardIndex < 0 || cardIndex >= player.hand.length) return { success: false, error: 'Carte invalide' };
 
   const card = player.hand.splice(cardIndex, 1)[0];
-  const played = { ...card, faceUp: faceUp !== false, playedBy: playerId };
+  const played = {
+    ...card,
+    faceUp: card.faceDown === undefined ? (faceUp !== false) : !card.faceDown,
+    playedBy: playerId
+  };
+  delete played.faceDown;
   room.table.push(played);
   return { success: true, card: played };
 }
@@ -65,10 +70,14 @@ function pickupCard(room, playerId, cardIndex) {
   if (cardIndex < 0 || cardIndex >= room.table.length) return { success: false, error: 'Carte invalide' };
 
   const card = room.table.splice(cardIndex, 1)[0];
-  delete card.faceUp;
-  delete card.playedBy;
-  player.hand.push(card);
-  return { success: true, card };
+  const picked = {
+    ...card,
+    faceDown: card.faceUp === undefined ? false : !card.faceUp
+  };
+  delete picked.faceUp;
+  delete picked.playedBy;
+  player.hand.push(picked);
+  return { success: true, card: picked };
 }
 
 /**

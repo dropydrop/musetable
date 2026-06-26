@@ -140,11 +140,11 @@ window.freeRenderer = function(gs) {
 function setFreeControls() {
   window.dom.controls.innerHTML = '';
   const btns = [
-    { id:'btn-free-draw', text:'🃏 +1', cls:'btn-primary', action: drawCards },
-    { id:'btn-free-deal', text:'♠ 1 chacun', cls:'btn-green', action: dealCards },
-    { id:'btn-free-roll', text:'🎲 2 dés', cls:'btn-gold', action: rollDice },
-    { id:'btn-free-shuffle', text:'🔀 Mélanger', cls:'btn-outline', action: shuffleDeck },
-    { id:'btn-free-reset', text:'🔄 Reset', cls:'btn-outline', action: resetGame }
+    { id:'btn-free-draw', text:'🃏 Joueur pioche 1', cls:'btn-primary', action: drawCards },
+    { id:'btn-free-deal', text:'♠ Distribuer 1 chacun', cls:'btn-green', action: dealCards },
+    { id:'btn-free-roll', text:'🎲 Lancer 2 dés', cls:'btn-gold', action: rollDice },
+    { id:'btn-free-shuffle', text:'🔀 Mélanger le deck', cls:'btn-outline', action: shuffleDeck },
+    { id:'btn-free-reset', text:'🔄 Reset tout', cls:'btn-outline', action: resetGame }
   ];
   btns.forEach(b => {
     const btn = document.createElement('button');
@@ -177,8 +177,8 @@ async function dealCards() {
 async function rollDice() {
   if (!window.state.roomCode) return;
   try {
-    const res = await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode, count: 2 });
-    window.showToast('🎲 ' + res.results.join(' · '));
+    await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode, count: 2 });
+    window.showToast('🎲 Dés lancés !');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
