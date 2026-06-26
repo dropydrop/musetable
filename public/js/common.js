@@ -19,6 +19,7 @@ function initDom() {
   const ids = ['screen-lobby','screen-room','screen-game','input-name','input-game',
     'input-code','input-join-name','btn-create','btn-join','btn-spectate',
     'room-code-display','room-game-type','waiting-players','btn-start','btn-leave',
+    'btn-back-menu','btn-reset-session',
     'game-code-badge','phase-badge','game-type-badge','board','game-status',
     'controls','btn-fullscreen','btn-anonyme','result-overlay','winner-text',
     'result-scores','btn-replay','btn-back-lobby','toast'];
@@ -278,6 +279,22 @@ function bindCopy() {
   });
 }
 
+// --- Boutons de navigation jeu
+function bindGameNavEvents() {
+  window.dom['btn-back-menu'].addEventListener('click', () => {
+    window.stopPolling();
+    window.showLobby();
+  });
+
+  window.dom['btn-reset-session'].addEventListener('click', async () => {
+    if (!window.state.roomCode) return;
+    try {
+      await window.api('POST', '/api/reset', { roomCode: window.state.roomCode });
+      window.showToast('Session réinitialisée');
+    } catch (e) { window.showToast('Erreur : ' + e.message); }
+  });
+}
+
 // --- Enter key
 function bindEnterKeys() {
   window.dom['input-name'].addEventListener('keydown', e => { if (e.key === 'Enter') window.dom['btn-create'].click(); });
@@ -290,6 +307,7 @@ initDom();
 bindLobbyEvents();
 bindRoomEvents();
 bindResultEvents();
+bindGameNavEvents();
 bindFullscreen();
 bindAnonyme();
 bindCopy();

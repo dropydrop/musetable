@@ -178,7 +178,7 @@ async function rollDice() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode, count: 2 });
-    window.showToast('🎲 Dés lancés !');
+    window.showToast('🎲 Lancé en cours...');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }

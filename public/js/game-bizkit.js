@@ -101,9 +101,9 @@ async function rollDice() {
     const btn = window._bizkitNextBtn;
     if (btn) {
       btn.disabled = false;
-      btn.textContent = res.isSpecial ? '🔄 Relancer' : '⏭️ Joueur suivant';
+      btn.textContent = '⏭️ Joueur suivant';
     }
-    window.showToast('🎲 ' + res.results.join(' · ') + (res.isSpecial ? ' ⚡ Spécial !' : ''));
+    window.showToast('🎲 Lancé en cours...');
   } catch (e) {
     window.showToast('Erreur : ' + e.message);
   }

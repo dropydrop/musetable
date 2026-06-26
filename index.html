@@ -44,6 +44,8 @@ button:active{transform:scale(.96)}
 .game-header .room-info .code-badge{background:var(--card);padding:4px 10px;border-radius:6px;font-weight:700;font-size:.9rem;letter-spacing:2px;color:var(--gold);cursor:pointer}
 .game-header .room-info .phase-badge{font-size:.75rem;color:var(--muted)}
 .game-header .room-info .phase-badge + .phase-badge{margin-left:4px}
+.game-header .game-nav{display:flex;gap:4px}
+.game-header .game-nav button{padding:4px 8px;font-size:.8rem;border-radius:6px;background:var(--card);color:var(--text);white-space:nowrap}
 .game-header .tools{display:flex;gap:6px}
 .game-header .tools button{padding:6px 12px;font-size:.8rem;border-radius:6px;background:var(--card);color:var(--text)}
 .game-header .tools button.active{background:var(--gold);color:#111}
@@ -146,6 +148,10 @@ button:active{transform:scale(.96)}
   <!-- ÉCRAN : Partie -->
   <div id="screen-game" class="screen">
     <div class="game-header">
+      <div class="game-nav">
+        <button id="btn-back-menu" title="Retour à l'accueil">←</button>
+        <button id="btn-reset-session" title="Réinitialiser la salle">🔄</button>
+      </div>
       <div class="room-info">
         <span class="code-badge" id="game-code-badge">----</span>
         <span class="phase-badge" id="phase-badge">En attente</span>
