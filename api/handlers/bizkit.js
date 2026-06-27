@@ -1,7 +1,7 @@
 // api/handlers/bizkit.js — Routes du jeu Bizkit
 // Chaque fonction reçoit (room, body, res, games)
 
-const { startGame: doStart, rollDice, nextTurn } = require('../../game-logic/bizkit.js');
+const { startGame: doStart, rollDice, nextTurn } = require('../game-logic/bizkit.js');
 
 async function startGame(room, body, res, games) {
   const result = doStart(room);

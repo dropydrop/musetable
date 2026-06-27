@@ -1,7 +1,7 @@
 // tests/unit/bizkit.test.js — Tests unitaires du jeu Bizkit
 const test = require('node:test');
 const assert = require('node:assert');
-const { startGame, rollDice, nextTurn, rollDie, checkSpecial } = require('../../game-logic/bizkit.js');
+const { startGame, rollDice, nextTurn, rollDie, checkSpecial } = require('../../api/game-logic/bizkit.js');
 
 // --- Helpers ---
 

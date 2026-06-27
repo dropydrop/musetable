@@ -2,12 +2,8 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const {
-  createShuffledDeck,
-  calculateScore,
-  nextTurn,
-  checkGameFinished
-} = require('../../game-logic.js');
+const { createShuffledDeck } = require('../../api/game-logic/common.js');
+const { calculateScore, nextTurn, checkGameFinished } = require('../../api/game-logic/blackjack.js');
 
 // --- createShuffledDeck ---
 

@@ -6,7 +6,7 @@ const {
   calculateScore,
   nextTurn,
   checkGameFinished
-} = require('../../game-logic/blackjack.js');
+} = require('../game-logic/blackjack.js');
 
 /**
  * POST /api/start-game — distribue 2 cartes à chaque joueur

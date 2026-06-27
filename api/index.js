@@ -3,12 +3,10 @@
 // Routes spécifiques dispatchées vers le handler du jeu
 
 const {
-  createShuffledDeck
-} = require('../game-logic.js');
-const {
   generateRoomCode,
-  generatePlayerId
-} = require('../game-logic/common.js');
+  generatePlayerId,
+  createShuffledDeck
+} = require('./game-logic/common.js');
 
 const blackjack = require('./handlers/blackjack.js');
 const free = require('./handlers/free.js');

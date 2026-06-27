@@ -1,10 +1,10 @@
 // tests/unit/free.test.js — Tests unitaires du mode Libre
 const test = require('node:test');
 const assert = require('node:assert');
-const { createShuffledDeck } = require('../../game-logic/common.js');
+const { createShuffledDeck } = require('../../api/game-logic/common.js');
 const {
   drawCards, playCard, flipCard, pickupCard, shuffleDeck, dealCards
-} = require('../../game-logic/free.js');
+} = require('../../api/game-logic/free.js');
 
 // Helper : salle libre type
 function makeFreeRoom(players) {

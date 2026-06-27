@@ -1,7 +1,7 @@
 // api/handlers/free.js — Routes du mode libre
 // Chaque fonction reçoit (room, body, res, games)
 
-const { createShuffledDeck } = require('../../game-logic/common.js');
+const { createShuffledDeck } = require('../game-logic/common.js');
 const {
   drawCards,
   playCard,
@@ -10,7 +10,7 @@ const {
   flipHandCard,
   shuffleDeck,
   dealCards
-} = require('../../game-logic/free.js');
+} = require('../game-logic/free.js');
 
 async function draw(room, body, res, games) {
   const { playerId, count } = body;
@@ -42,7 +42,7 @@ async function pickup(room, body, res, games) {
 
 function roll(room, body, res) {
   const count = body.count || room.diceCount || 1;
-  const { rollDice } = require('../../game-logic/free.js');
+  const { rollDice } = require('../game-logic/free.js');
   const result = rollDice(count);
   room.lastDice = { results: result.results, count };
   res.status(200).json({ success: true, results: result.results });
