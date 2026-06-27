@@ -67,7 +67,8 @@ module.exports = async (req, res) => {
         winners: null,
         result: null,
         table: [],
-        lastDice: null
+        lastDice: null,
+        diceCount: 2
       };
       res.status(200).json({ success: true, roomCode: code });
       return;
@@ -134,6 +135,7 @@ module.exports = async (req, res) => {
         cardsRemaining: room.deck.length,
         table: room.table || [],
         lastDice: room.lastDice || null,
+        diceCount: room.diceCount || 2,
         players: {}
       };
       for (const [id, p] of Object.entries(room.players)) {
@@ -217,6 +219,9 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/free/reset' && req.method === 'POST') {
         await free.reset(room, body, res, games); return;
+      }
+      if (path === '/api/free/set-dice' && req.method === 'POST') {
+        await free.setDice(room, body, res, games); return;
       }
     }
 
