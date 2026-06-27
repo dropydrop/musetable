@@ -23,6 +23,7 @@ async function startGame(room, body, res, games) {
     p.score = calculateScore(p.hand);
     p.isActive = true;
     p.stand = false;
+    p.resultat = null;
     if (p.solde === undefined) p.solde = 100;
     p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
   }
@@ -40,22 +41,26 @@ async function startGame(room, body, res, games) {
 
   if (bjPlayers.length >= 1) {
     room.phase = 'finished';
+    const miseRef = room.miseParDefaut || MISE_PAR_DEFAUT;
     if (bjPlayers.length === 1) {
       room.winners = bjPlayers;
       room.result = 21;
-      const mise = room.miseParDefaut || MISE_PAR_DEFAUT;
       for (const [, p] of Object.entries(room.players)) {
-        const m = p.mise || mise;
+        const m = p.mise || miseRef;
         if (bjPlayers.includes(p.name)) {
+          p.resultat = 'gagné';
           p.solde = (p.solde || 100) + m;
         } else {
+          p.resultat = 'perdu';
           p.solde = (p.solde || 100) - m;
         }
       }
     } else {
       room.winners = bjPlayers;
       room.result = 21;
-      // Push : pas de mouvement de solde
+      for (const [, p] of Object.entries(room.players)) {
+        p.resultat = 'egalité';
+      }
     }
     res.status(200).json({ success: true, blackjack: true, winners: bjPlayers, push: bjPlayers.length > 1 });
     return;
@@ -148,6 +153,7 @@ async function redeal(room, body, res, games) {
     p.score = calculateScore(p.hand);
     p.isActive = true;
     p.stand = false;
+    p.resultat = null;
     p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
   }
 
@@ -158,21 +164,26 @@ async function redeal(room, body, res, games) {
 
   if (bjPlayers.length >= 1) {
     room.phase = 'finished';
+    const miseRef = room.miseParDefaut || MISE_PAR_DEFAUT;
     if (bjPlayers.length === 1) {
       room.winners = bjPlayers;
       room.result = 21;
-      const mise = room.miseParDefaut || MISE_PAR_DEFAUT;
       for (const [, p] of Object.entries(room.players)) {
-        const m = p.mise || mise;
+        const m = p.mise || miseRef;
         if (bjPlayers.includes(p.name)) {
+          p.resultat = 'gagné';
           p.solde = (p.solde || 100) + m;
         } else {
+          p.resultat = 'perdu';
           p.solde = (p.solde || 100) - m;
         }
       }
     } else {
       room.winners = bjPlayers;
       room.result = 21;
+      for (const [, p] of Object.entries(room.players)) {
+        p.resultat = 'egalité';
+      }
     }
     res.status(200).json({ success: true, blackjack: true, winners: bjPlayers, push: bjPlayers.length > 1 });
     return;

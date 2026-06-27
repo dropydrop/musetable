@@ -71,25 +71,16 @@ window.blackjack.renderer = function(gs) {
     }
 
     if (gs.phase === 'finished') {
-      const isWinner = gs.winners && gs.winners.includes(p.name);
-      const isBust = p.score > 21;
-      const isPush = gs.winners && gs.winners.length > 1 && gs.winners[0] !== 'Personne (tous ont dépassé 21)' && isWinner;
-
-      if (isWinner && !isPush) {
+      if (p.resultat === 'gagné') {
         const winBadge = document.createElement('div');
         winBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--gold);font-size:.9rem';
         winBadge.textContent = '🏆 Gagnant ! +' + (p.mise || 0);
         area.appendChild(winBadge);
-      } else if (!isWinner && !isBust && !isPush && gs.winners && gs.winners[0] !== 'Personne (tous ont dépassé 21)') {
+      } else if (p.resultat === 'perdu') {
         const loseBadge = document.createElement('div');
         loseBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--red);font-size:.9rem';
-        loseBadge.textContent = '💥 Perdant -' + (p.mise || 0);
+        loseBadge.textContent = p.score > 21 ? '💥 Dépassé -' + (p.mise || 0) : '💥 Perdant -' + (p.mise || 0);
         area.appendChild(loseBadge);
-      } else if (isBust && gs.winners && gs.winners[0] !== 'Personne (tous ont dépassé 21)') {
-        const bustBadge = document.createElement('div');
-        bustBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--red);font-size:.9rem';
-        bustBadge.textContent = '💥 Dépassé -' + (p.mise || 0);
-        area.appendChild(bustBadge);
       }
     }
 

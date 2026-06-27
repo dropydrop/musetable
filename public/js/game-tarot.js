@@ -198,8 +198,9 @@ function setTarotBidControls(gs) {
     btn.textContent = i;
     btn.className = 'btn-outline';
     btn.style.cssText = 'min-width:40px;padding:10px 8px;font-weight:700';
+    const isLast = gs.bidActuel === gs.joueurs?.[gs.dealerIndex];
     let disabled = !isMyTurn;
-    if (isMyTurn && gs.interdit !== null && i === gs.interdit) {
+    if (isMyTurn && isLast && gs.interdit !== null && i === gs.interdit) {
       disabled = true;
       btn.style.textDecoration = 'line-through';
       btn.style.opacity = '0.4';

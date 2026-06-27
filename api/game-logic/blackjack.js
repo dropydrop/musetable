@@ -56,8 +56,8 @@ function nextTurn(room) {
 
 /**
  * Vérifie si tous les joueurs ont fini, détermine le(s) gagnant(s) et met à jour les soldes.
- * - 1 winner : +mise pour lui, -mise pour les autres (même bust)
- * - Push (égalité) : personne ne gagne ni ne perd
+ * - 1 winner +:mise pour lui, -:mise pour les autres
+ * - Push (égalité) : personne ne gagne ni ne perd (soldes inchangés)
  * - Tous bust : personne ne gagne ni ne perd
  */
 function checkGameFinished(room) {
@@ -66,6 +66,12 @@ function checkGameFinished(room) {
   if (!allDone || players.length === 0) return;
 
   room.phase = 'finished';
+
+  // Recalculer les scores finaux
+  for (const p of players) {
+    p.score = calculateScore(p.hand);
+  }
+
   let bestScore = 0;
   let winners = [];
 
@@ -85,17 +91,20 @@ function checkGameFinished(room) {
   room.winners = winnerNames;
   room.result = bestScore;
 
-  // Soldes : seulement si 1 winner unique
-  if (!isEveryoneBust && !isPush) {
-    const mise = room.miseParDefaut || MISE_PAR_DEFAUT;
-    for (const [, p] of Object.entries(room.players)) {
-      if (p.solde === undefined) p.solde = 100;
-      const miseJoueur = p.mise || mise;
-      if (winners.includes(p.name)) {
-        p.solde += miseJoueur;
-      } else {
-        p.solde -= miseJoueur;
-      }
+  // Résultat individuel et soldes
+  const miseRef = room.miseParDefaut || MISE_PAR_DEFAUT;
+  for (const [, p] of Object.entries(room.players)) {
+    if (p.solde === undefined) p.solde = 100;
+    const m = p.mise || miseRef;
+
+    if (isEveryoneBust || isPush) {
+      p.resultat = null; // pas de mouvement
+    } else if (winners.includes(p.name)) {
+      p.resultat = 'gagné';
+      p.solde += m;
+    } else {
+      p.resultat = 'perdu';
+      p.solde -= m;
     }
   }
 }
