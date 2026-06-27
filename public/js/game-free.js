@@ -222,6 +222,7 @@ window.free.rollDice = async function() {
     window.showToast('Erreur : roomCode non défini');
     return;
   }
+  console.log('[MuseTable] rollDice — roomCode:', window.state.roomCode, '→ POST /api/free/roll');
   try {
     await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode });
     window.showToast('🎲 Lancé en cours...');

@@ -180,7 +180,7 @@ window.stopPolling = function() {
 };
 
 window.pollGameState = async function() {
-  if (!window.state.roomCode) return;
+  if (!window.state.roomCode) { console.warn('[MuseTable] pollGameState — roomCode manquant'); return; }
   try {
     const data = await window.api('GET', `/api/game-state?room=${window.state.roomCode}`);
     const gs = data.gameState;
@@ -207,8 +207,10 @@ window.pollGameState = async function() {
 function bindLobbyEvents() {
   window.dom['btn-create'].addEventListener('click', async () => {
     const name = window.dom['input-name'].value.trim() || 'Anonyme';
+    const gameType = window.dom['input-game'] ? window.dom['input-game'].value : 'blackjack';
+    console.log('[MuseTable] Création salle — gameType:', gameType, '— input-game DOM:', window.dom['input-game']);
     try {
-      const createRes = await window.api('POST', '/api/create-room', { gameType: window.dom['input-game'].value });
+      const createRes = await window.api('POST', '/api/create-room', { gameType });
       const joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
       window.state.playerId = joinRes.playerId;
       window.state.playerName = name;
