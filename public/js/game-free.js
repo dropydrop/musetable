@@ -173,7 +173,7 @@ function setFreeControls() {
   const minusBtn = document.createElement('button');
   minusBtn.textContent = '➖';
   minusBtn.className = 'btn-outline';
-  minusBtn.addEventListener('click', () => setDiceCount(-1));
+  minusBtn.addEventListener('click', () => freeSetDiceCount(-1));
 
   const countDisplay = document.createElement('span');
   countDisplay.id = 'dice-count-display';
@@ -183,12 +183,12 @@ function setFreeControls() {
   const plusBtn = document.createElement('button');
   plusBtn.textContent = '➕';
   plusBtn.className = 'btn-outline';
-  plusBtn.addEventListener('click', () => setDiceCount(1));
+  plusBtn.addEventListener('click', () => freeSetDiceCount(1));
 
   const rollBtn = document.createElement('button');
   rollBtn.textContent = '🎲 Lancer';
   rollBtn.className = 'btn-gold';
-  rollBtn.addEventListener('click', rollDice);
+  rollBtn.addEventListener('click', freeRollDice);
 
   diceRow.appendChild(minusBtn);
   diceRow.appendChild(countDisplay);
@@ -215,7 +215,7 @@ async function dealCards() {
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
-async function rollDice() {
+async function freeRollDice() {
   if (!window.state.roomCode) {
     window.showToast('Erreur : roomCode non défini');
     return;
@@ -227,7 +227,7 @@ async function rollDice() {
   catch (e) { window.showToast('Erreur : ' + e.message); }
 }
 
-async function setDiceCount(delta) {
+async function freeSetDiceCount(delta) {
   const display = document.getElementById('dice-count-display');
   const current = parseInt(display.textContent.replace('🎲 x', '')) || 1;
   const count = current + delta;

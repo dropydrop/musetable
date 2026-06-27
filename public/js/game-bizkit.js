@@ -83,7 +83,7 @@ function setBizkitControls() {
   rollBtn.className = 'btn-gold';
   rollBtn.id = 'btn-bizkit-roll';
   rollBtn.textContent = '🎲 Lancer';
-  rollBtn.addEventListener('click', rollDice);
+  rollBtn.addEventListener('click', bizkitRollDice);
   controls.appendChild(rollBtn);
 
   const nextBtn = document.createElement('button');
@@ -97,7 +97,7 @@ function setBizkitControls() {
   window._bizkitNextBtn = nextBtn;
 }
 
-async function rollDice() {
+async function bizkitRollDice() {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     const res = await window.api('POST', '/api/bizkit/roll', {
