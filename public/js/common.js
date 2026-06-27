@@ -22,8 +22,7 @@ function initDom() {
     'btn-back-menu','btn-reset-session',
     'game-code-badge','phase-badge','game-type-badge','board','game-status',
     'dice-count-display',
-    'controls','btn-fullscreen','btn-anonyme','result-overlay','winner-text',
-    'result-scores','btn-replay','btn-back-lobby','toast'];
+    'controls','btn-fullscreen','btn-anonyme','toast'];
   ids.forEach(id => window.dom[id] = window.$(id));
 }
 
@@ -243,14 +242,13 @@ window.pollGameState = async function() {
   try {
     const data = await window.api('GET', `/api/game-state?room=${window.state.roomCode}`);
     const gs = data.gameState;
-    if (gs.phase === 'playing' && window.state.phase === 'room') {
+    if (gs.phase !== 'waiting' && gs.phase !== 'finished' && window.state.phase === 'room') {
       window.state.phase = 'playing';
       window.showGame();
       if (window.switchGameMode) window.switchGameMode(gs.gameType);
     }
     if (gs.phase === 'finished' && window.state.phase === 'playing') {
       window.state.phase = 'finished';
-      if (gs.gameType === 'blackjack' && window.blackjack && window.blackjack.renderResult) window.blackjack.renderResult(gs);
     }
     if (gs.phase === 'waiting' && (window.state.phase === 'playing' || window.state.phase === 'finished')) {
       window.state.phase = 'room';
@@ -324,21 +322,6 @@ function bindRoomEvents() {
   });
 }
 
-// --- Replay / Quitter
-function bindResultEvents() {
-  window.dom['btn-replay'].addEventListener('click', async () => {
-    if (!window.state.roomCode) return;
-    try {
-      await window.api('POST', '/api/reset', { roomCode: window.state.roomCode });
-      window.dom['result-overlay'].classList.remove('show');
-      window.state.phase = 'room';
-      window.showRoom(window.state.roomCode);
-    } catch (e) { window.showToast('Erreur : ' + e.message); }
-  });
-
-  window.dom['btn-back-lobby'].addEventListener('click', window.showLobby);
-}
-
 // --- Plein écran
 function bindFullscreen() {
   window.dom['btn-fullscreen'].addEventListener('click', () => {
@@ -402,7 +385,6 @@ function bindEnterKeys() {
 initDom();
 bindLobbyEvents();
 bindRoomEvents();
-bindResultEvents();
 bindGameNavEvents();
 bindFullscreen();
 bindAnonyme();

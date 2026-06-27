@@ -4,7 +4,7 @@ window.blackjack = {};
 
 window.blackjack.renderer = function(gs) {
   if (!gs) return;
-  const phaseLabels = { waiting:'En attente', playing:'En cours', finished:'Terminée' };
+  const phaseLabels = { waiting:'En attente', playing:'En cours', finished:'Manche terminée' };
   window.dom['phase-badge'].textContent = phaseLabels[gs.phase] || gs.phase;
   window.dom['game-type-badge'].textContent = window.getGameTypeLabel(gs.gameType);
   const rt = window.dom['room-game-type'];
@@ -31,6 +31,12 @@ window.blackjack.renderer = function(gs) {
       nameSpan.textContent = id === window.state.playerId ? '👤 ' + p.name + ' (moi)' : p.name;
     }
 
+    const soldeMise = document.createElement('span');
+    soldeMise.style.cssText = 'font-size:.75rem;color:var(--muted);margin-left:8px';
+    const solde = p.solde !== undefined ? p.solde : '';
+    const mise = p.mise !== undefined ? p.mise : '';
+    if (solde !== '') soldeMise.textContent = '💰' + solde + (mise ? ' | Mise: ' + mise : '');
+
     const scoreSpan = document.createElement('span');
     scoreSpan.className = 'p-score';
     if (p.score > 0) {
@@ -40,6 +46,7 @@ window.blackjack.renderer = function(gs) {
     }
 
     header.appendChild(nameSpan);
+    header.appendChild(soldeMise);
     header.appendChild(scoreSpan);
     area.appendChild(header);
 
@@ -66,7 +73,7 @@ window.blackjack.renderer = function(gs) {
     if (gs.phase === 'finished' && gs.winners && gs.winners.includes(p.name)) {
       const winBadge = document.createElement('div');
       winBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--gold);font-size:.9rem';
-      winBadge.textContent = '🏆 Gagnant !';
+      winBadge.textContent = '🏆 Gagnant ! +' + (p.mise || 0);
       area.appendChild(winBadge);
     }
 
@@ -86,7 +93,9 @@ window.blackjack.renderer = function(gs) {
     updateBlackjackControls(gs);
   } else if (gs.phase === 'finished') {
     gsEl.className = 'game-status winner';
-    gsEl.textContent = '🏆 ' + (gs.winners ? gs.winners.join(', ') : '?') + ' gagne !';
+    const winners = gs.winners ? gs.winners.join(', ') : '?';
+    gsEl.textContent = '🏆 ' + winners + ' — Manche terminée';
+    updateBlackjackControls(gs);
   } else if (gs.phase === 'waiting') {
     gsEl.className = 'game-status waiting';
     gsEl.textContent = 'En attente du lancement...';
@@ -103,51 +112,40 @@ function updateBlackjackControls(gs) {
   }
   window.dom['screen-game'].classList.remove('spectator');
 
-  if (window.state.phase === 'finished') {
-    window.dom['btn-hit'].disabled = true;
-    window.dom['btn-double'].disabled = true;
-    window.dom['btn-stand'].disabled = true;
+  const bHit = window.dom['btn-hit'];
+  const bDouble = window.dom['btn-double'];
+  const bStand = window.dom['btn-stand'];
+  const bRejouer = window.dom['btn-rejouer'];
+
+  if (gs.phase === 'finished') {
+    if (bHit) { bHit.disabled = true; bHit.style.display = 'none'; }
+    if (bDouble) { bDouble.disabled = true; bDouble.style.display = 'none'; }
+    if (bStand) { bStand.disabled = true; bStand.style.display = 'none'; }
+    if (bRejouer) bRejouer.style.display = '';
     return;
   }
 
-  window.dom['btn-hit'].disabled = !isMyTurn;
-  window.dom['btn-stand'].disabled = !isMyTurn;
+  if (bRejouer) bRejouer.style.display = 'none';
+  if (bHit) { bHit.disabled = !isMyTurn; bHit.style.display = ''; }
+  if (bStand) { bStand.disabled = !isMyTurn; bStand.style.display = ''; }
+  if (bDouble) { bDouble.disabled = !isMyTurn; bDouble.style.display = ''; }
 
   const me = gs.players[window.state.playerId];
-  window.dom['btn-double'].disabled = !isMyTurn || !me || me.hand.length !== 2;
+  if (bDouble) bDouble.disabled = !isMyTurn || !me || me.hand.length !== 2;
 
   if (me && me.score >= 21) {
-    window.dom['btn-hit'].disabled = true;
-    window.dom['btn-double'].disabled = true;
+    if (bHit) bHit.disabled = true;
+    if (bDouble) bDouble.disabled = true;
   }
 }
-
-window.blackjack.renderResult = function(gs) {
-  window.dom['result-overlay'].classList.add('show');
-  if (gs.winners) {
-    if (gs.winners.length === 1 && gs.winners[0] === 'Personne (tous ont dépassé 21)') {
-      window.dom['winner-text'].textContent = '💥 Tout le monde a dépassé 21 !';
-    } else {
-      window.dom['winner-text'].textContent = gs.winners.join(' & ');
-    }
-  }
-  window.dom['result-scores'].innerHTML = '';
-  if (gs.players) {
-    for (const [, p] of Object.entries(gs.players)) {
-      const span = document.createElement('span');
-      const label = p.score > 21 ? '💥' : (p.score === 21 && p.hand && p.hand.length === 2 ? '🌟' : '');
-      span.innerHTML = label + ' <b>' + p.name + '</b> : ' + p.score + ' pts';
-      window.dom['result-scores'].appendChild(span);
-    }
-  }
-};
 
 function setBlackjackControls() {
   window.dom.controls.innerHTML = '';
   const spec = [
     { id:'btn-hit', text:'HIT', cls:'btn-green' },
     { id:'btn-double', text:'DOUBLER', cls:'btn-gold' },
-    { id:'btn-stand', text:'STAND', cls:'btn-red' }
+    { id:'btn-stand', text:'STAND', cls:'btn-red' },
+    { id:'btn-rejouer', text:'🔄 Rejouer', cls:'btn-green' }
   ];
   spec.forEach(b => {
     const btn = document.createElement('button');
@@ -173,6 +171,12 @@ function setBlackjackControls() {
   window.dom['btn-double'].addEventListener('click', async () => {
     if (!window.state.roomCode || !window.state.playerId) return;
     try { await window.api('POST', '/api/double', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
+    catch (e) { window.showToast('Erreur : ' + e.message); }
+  });
+
+  window.dom['btn-rejouer'].addEventListener('click', async () => {
+    if (!window.state.roomCode) return;
+    try { await window.api('POST', '/api/blackjack/redeal', { roomCode: window.state.roomCode }); }
     catch (e) { window.showToast('Erreur : ' + e.message); }
   });
 }

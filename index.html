@@ -69,6 +69,9 @@ button:active{transform:scale(.96)}
 /* Cartes en grille (6+) */
 .cards-row.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px}
 .card{width:64px;height:89px;border-radius:8px;flex-shrink:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;position:relative}
+.pyramide-card{width:48px;height:64px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.pyramide-card .pv{font-size:1.1rem;font-weight:800;line-height:1.2}
+.pyramide-card .ps{font-size:.75rem;line-height:1}
 .card-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
 .card-value{font-size:1.6rem;font-weight:800;line-height:1}
 .card-suit{font-size:1.2rem;line-height:1}
@@ -182,15 +185,6 @@ button:active{transform:scale(.96)}
     <div class="game-status" id="game-status"></div>
 
     <div class="controls" id="controls"></div>
-  </div>
-
-  <!-- Résultat (overlay) -->
-  <div id="result-overlay">
-    <h2>🏆 Partie terminée</h2>
-    <div class="winner-name" id="winner-text"></div>
-    <div class="scores" id="result-scores"></div>
-    <button class="btn-gold" id="btn-replay">Rejouer</button>
-    <button class="btn-outline" id="btn-back-lobby">Quitter</button>
   </div>
 
   <!-- Toast -->

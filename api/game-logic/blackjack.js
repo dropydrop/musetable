@@ -1,6 +1,8 @@
 // game-logic/blackjack.js — Logique métier du Blackjack
 // Fonctions pures, sans dépendance au stockage
 
+const MISE_PAR_DEFAUT = 10;
+
 /**
  * Calcule le score Blackjack d'une main
  * As = 1 ou 11, figures = 10, bust si > 21
@@ -38,6 +40,7 @@ function nextTurn(room) {
 
 /**
  * Vérifie si tous les joueurs ont fini de jouer, détermine le(s) gagnant(s)
+ * et met à jour les soldes.
  * @param {object} room — objet salle (muté sur place)
  */
 function checkGameFinished(room) {
@@ -59,8 +62,23 @@ function checkGameFinished(room) {
     }
   }
 
-  room.winners = winners.length > 0 ? winners : ['Personne (tous ont dépassé 21)'];
+  const winnerNames = winners.length > 0 ? winners : ['Personne (tous ont dépassé 21)'];
+  room.winners = winnerNames;
   room.result = bestScore;
+
+  // Mise à jour des soldes
+  const mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+  for (const [id, p] of Object.entries(room.players)) {
+    if (p.solde === undefined) p.solde = 100;
+    const miseJoueur = p.mise || mise;
+    if (p.score <= 21 && winners.includes(p.name)) {
+      p.solde += miseJoueur; // gagne sa mise
+    } else if (p.score <= 21 && winners.length > 0 && winners[0] !== 'Personne (tous ont dépassé 21)') {
+      p.solde -= miseJoueur; // perd sa mise
+    }
+    // push (égalité) : solde inchangé
+    // tous bust : pas de perte de mise
+  }
 }
 
-module.exports = { calculateScore, nextTurn, checkGameFinished };
+module.exports = { calculateScore, nextTurn, checkGameFinished, MISE_PAR_DEFAUT };

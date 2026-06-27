@@ -1,7 +1,7 @@
 // tests/unit/pyramide.test.js — Tests unitaires du jeu Pyramide
 const test = require('node:test');
 const assert = require('node:assert');
-const { startGame, flipCard, matchCard, nextCard, getPublicState, getLigne } = require('../../api/game-logic/pyramide.js');
+const { startGame, distribuerSuivant, flipCard, matchCard, nextCard, getPublicState, getLigne, getMultiplicateur } = require('../../api/game-logic/pyramide.js');
 
 function makePyramideRoom(joueurs) {
   const p = {};
@@ -30,35 +30,79 @@ test('getLigne — index corrects', () => {
   assert.strictEqual(getLigne(9), 4);
 });
 
+test('getMultiplicateur — ligne 4 = 4, sinon = ligne', () => {
+  assert.strictEqual(getMultiplicateur(1), 1);
+  assert.strictEqual(getMultiplicateur(2), 2);
+  assert.strictEqual(getMultiplicateur(3), 3);
+  assert.strictEqual(getMultiplicateur(4), 4);
+});
+
 test('startGame — échoue avec moins de 2 joueurs', () => {
   const room = makePyramideRoom(['Alice']);
   const r = startGame(room);
   assert.strictEqual(r.success, false);
 });
 
-test('startGame — échoue avec plus de 4 joueurs', () => {
-  const room = makePyramideRoom(['A', 'B', 'C', 'D', 'E']);
+test('startGame — échoue avec plus de 6 joueurs', () => {
+  const room = makePyramideRoom(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
   const r = startGame(room);
   assert.strictEqual(r.success, false);
 });
 
-test('startGame — distribue 4 cartes + pyramide 10', () => {
+test('startGame — 4 joueurs acceptés', () => {
+  const room = makePyramideRoom(['A', 'B', 'C', 'D']);
+  const r = startGame(room);
+  assert.ok(r.success);
+});
+
+test('startGame — 6 joueurs acceptés', () => {
+  const room = makePyramideRoom(['A', 'B', 'C', 'D', 'E', 'F']);
+  const r = startGame(room);
+  assert.ok(r.success);
+});
+
+test('startGame — phase distribution avec 1 carte chacun', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   const r = startGame(room);
   assert.ok(r.success);
-  assert.strictEqual(room.players['p0'].hand.length, 4);
-  assert.strictEqual(room.players['p1'].hand.length, 4);
+  assert.strictEqual(room.phase, 'distribution');
+  assert.strictEqual(room.players['p0'].hand.length, 1);
+  assert.strictEqual(room.players['p1'].hand.length, 1);
   assert.strictEqual(room.pyramide.length, 10);
-  assert.strictEqual(room.indexActif, 0);
-  assert.strictEqual(room.pyramide[0].faceUp, true);
+});
+
+test('startGame — pyramide index 0 face visible', () => {
+  const room = makePyramideRoom(['Alice', 'Bob']);
+  startGame(room);
+  assert.ok(room.pyramide[0].faceUp);
+});
+
+test('distribuerSuivant — phase playing après 4 tours', () => {
+  const room = makePyramideRoom(['Alice', 'Bob']);
+  startGame(room);
+  assert.strictEqual(room.phase, 'distribution');
+
+  // Simuler 3 distributions restantes
+  for (let i = 0; i < 3; i++) {
+    // Donner une carte supplémentaire à chaque joueur
+    for (const id of room.playerOrder) {
+      room.players[id].hand.push(room.deck.pop());
+    }
+    room.tourDistribution++;
+  }
+
+  const r = distribuerSuivant(room);
+  assert.ok(r.success);
+  assert.strictEqual(r.phase, 'playing');
+  assert.ok(r.memoFini);
+  assert.strictEqual(room.phase, 'playing');
 });
 
 test('flipCard — retourne la carte active', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
-  assert.strictEqual(room.pyramide[0].faceUp, true);
   // Avancer puis flipper
-  nextCard(room);
+  room.indexActif = 1;
   room.pyramide[1].faceUp = false;
   const r = flipCard(room);
   assert.ok(r.success);
@@ -69,6 +113,8 @@ test('flipCard — retourne la carte active', () => {
 test('nextCard — avance dans la pyramide', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
+  // Forcer phase playing
+  room.phase = 'playing';
   const r = nextCard(room);
   assert.ok(r.success);
   assert.strictEqual(r.indexActif, 1);
@@ -78,6 +124,7 @@ test('nextCard — avance dans la pyramide', () => {
 test('nextCard — termine quand fin de pyramide', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
+  room.phase = 'playing';
   room.indexActif = 9;
   const r = nextCard(room);
   assert.strictEqual(r.phase, 'finished');
@@ -86,7 +133,7 @@ test('nextCard — termine quand fin de pyramide', () => {
 test('matchCard — valeurs correspondantes', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
-  // Forcer la pyramide et la main à avoir la même valeur
+  room.phase = 'playing';
   room.pyramide[0] = { suit: 'S', value: '7', faceUp: true };
   room.players['p0'].hand = [{ suit: 'H', value: '7' }];
   const r = matchCard(room, 'p0', 0);
@@ -98,6 +145,7 @@ test('matchCard — valeurs correspondantes', () => {
 test('matchCard — valeurs différentes → erreur', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
+  room.phase = 'playing';
   room.pyramide[0] = { suit: 'S', value: '7', faceUp: true };
   room.players['p0'].hand = [{ suit: 'H', value: 'K' }];
   const r = matchCard(room, 'p0', 0);

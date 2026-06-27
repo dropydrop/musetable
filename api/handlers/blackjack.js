@@ -5,7 +5,8 @@
 const {
   calculateScore,
   nextTurn,
-  checkGameFinished
+  checkGameFinished,
+  MISE_PAR_DEFAUT
 } = require('../game-logic/blackjack.js');
 
 /**
@@ -21,12 +22,15 @@ async function startGame(room, body, res, games) {
     p.score = calculateScore(p.hand);
     p.isActive = true;
     p.stand = false;
+    if (p.solde === undefined) p.solde = 100;
+    p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
   }
 
   room.phase = 'playing';
   room.playerOrder = Object.keys(room.players);
   room.turnIndex = 0;
   room.currentTurn = room.playerOrder[0];
+  room.winners = null;
   res.status(200).json({ success: true });
 }
 
@@ -72,7 +76,7 @@ async function stand(room, body, res, games) {
 }
 
 /**
- * POST /api/double — tire 1 carte + stand automatique (2 cartes max)
+ * POST /api/double — tire 1 carte + stand automatique (2 cartes max), double la mise
  */
 async function double(room, body, res, games) {
   const { playerId } = body;
@@ -86,11 +90,37 @@ async function double(room, body, res, games) {
 
   player.hand.push(room.deck.pop());
   player.score = calculateScore(player.hand);
+  player.mise = (player.mise || MISE_PAR_DEFAUT) * 2;
   player.stand = true;
   player.isActive = false;
   nextTurn(room);
 
-  res.status(200).json({ success: true, score: player.score });
+  res.status(200).json({ success: true, score: player.score, mise: player.mise });
 }
 
-module.exports = { startGame, hit, stand, double };
+/**
+ * POST /api/blackjack/redeal — redistribue sans reset des soldes
+ */
+async function redeal(room, body, res, games) {
+  room.phase = 'playing';
+  room.deck = require('../game-logic/common.js').createShuffledDeck();
+  room.turnIndex = 0;
+  room.playerOrder = Object.keys(room.players);
+  room.currentTurn = room.playerOrder[0];
+  room.winners = null;
+  room.result = null;
+
+  for (const p of Object.values(room.players)) {
+    p.hand = [];
+    p.hand.push(room.deck.pop());
+    p.hand.push(room.deck.pop());
+    p.score = calculateScore(p.hand);
+    p.isActive = true;
+    p.stand = false;
+    p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+  }
+
+  res.status(200).json({ success: true });
+}
+
+module.exports = { startGame, hit, stand, double, redeal };

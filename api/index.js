@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
     if (!room) {
       if (path === '/api/join-room' || path === '/api/leave-room' || path === '/api/game-state' ||
           path === '/api/reset' || path === '/api/start-game' || path === '/api/hit' ||
-          path === '/api/stand' || path === '/api/double' ||
+          path === '/api/stand' || path === '/api/double' || path === '/api/blackjack/redeal' ||
           path.startsWith('/api/free/') || path.startsWith('/api/bizkit/') ||
           path.startsWith('/api/tarot/') || path.startsWith('/api/devine/') || path.startsWith('/api/pyramide/')) {
         res.status(404).json({ success: false, error: 'Salle introuvable' });
@@ -132,6 +132,7 @@ module.exports = async (req, res) => {
         table: room.table || [],
         lastDice: room.lastDice || null,
         diceCount: room.diceCount || 1,
+        miseParDefaut: room.miseParDefaut || null,
         players: {}
       };
       for (const [id, p] of Object.entries(room.players)) {
@@ -140,7 +141,9 @@ module.exports = async (req, res) => {
           hand: p.hand,
           score: p.score,
           isActive: room.gameType === 'free' ? true : p.isActive,
-          stand: room.gameType === 'free' ? false : p.stand
+          stand: room.gameType === 'free' ? false : p.stand,
+          solde: p.solde,
+          mise: p.mise
         };
       }
       res.status(200).json({ success: true, gameState: publicState });
@@ -183,6 +186,10 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/double' && req.method === 'POST') {
         await blackjack.double(room, body, res, games);
+        return;
+      }
+      if (path === '/api/blackjack/redeal' && req.method === 'POST') {
+        await blackjack.redeal(room, body, res, games);
         return;
       }
     }
@@ -281,6 +288,9 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/pyramide/start' && req.method === 'POST') {
         await pyramide.start(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/distrib' && req.method === 'POST') {
+        await pyramide.distrib(room, body, res, games); return;
       }
       if (path === '/api/pyramide/flip' && req.method === 'POST') {
         await pyramide.flip(room, body, res, games); return;
