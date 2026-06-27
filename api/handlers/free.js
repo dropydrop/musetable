@@ -9,7 +9,8 @@ const {
   pickupCard,
   flipHandCard,
   shuffleDeck,
-  dealCards
+  dealCards,
+  rollDice
 } = require('../game-logic/free.js');
 
 async function draw(room, body, res, games) {
@@ -42,7 +43,6 @@ async function pickup(room, body, res, games) {
 
 function roll(room, body, res) {
   const count = body.count || room.diceCount || 1;
-  const { rollDice } = require('../game-logic/free.js');
   const result = rollDice(count);
   room.lastDice = { results: result.results, count };
   res.status(200).json({ success: true, results: result.results });
