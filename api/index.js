@@ -289,8 +289,11 @@ module.exports = async (req, res) => {
       if (path === '/api/pyramide/start' && req.method === 'POST') {
         await pyramide.start(room, body, res, games); return;
       }
-      if (path === '/api/pyramide/distrib' && req.method === 'POST') {
-        await pyramide.distrib(room, body, res, games); return;
+      if (path === '/api/pyramide/distribuer' && req.method === 'POST') {
+        await pyramide.distribuer(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/memoriser' && req.method === 'POST') {
+        await pyramide.memorize(room, body, res, games); return;
       }
       if (path === '/api/pyramide/flip' && req.method === 'POST') {
         await pyramide.flip(room, body, res, games); return;

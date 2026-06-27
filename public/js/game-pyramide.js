@@ -2,9 +2,18 @@
 
 window.pyramide = {};
 
+function getPyramideInfos(index) {
+  if (index <= 3) return { ligne: 1, gorgees: 1, position: index };
+  if (index <= 6) return { ligne: 2, gorgees: 2, position: index - 4 };
+  if (index <= 8) return { ligne: 3, gorgees: 3, position: index - 7 };
+  return { ligne: 4, gorgees: 4, position: 0 };
+}
+
 window.pyramide.renderer = function(gs) {
   if (!gs) return;
-  window.dom['phase-badge'].textContent = 'Pyramide';
+
+  const phaseLabels = { waiting:'En attente', distribution:'Distribution', jeu:'En cours', finished:'Terminée' };
+  window.dom['phase-badge'].textContent = phaseLabels[gs.phase] || gs.phase;
   window.dom['game-type-badge'].textContent = '🔺 Pyramide';
   const rt = window.dom['room-game-type'];
   if (rt) rt.textContent = 'Jeu : Pyramide';
@@ -12,8 +21,88 @@ window.pyramide.renderer = function(gs) {
   const board = window.dom.board;
   board.innerHTML = '';
 
-  // Pyramide
-  if (gs.pyramide && gs.pyramide.length > 0 && gs.phase !== 'waiting') {
+  // === 1. Joueurs + leurs mains ===
+  if (gs.players) {
+    for (const [id, p] of Object.entries(gs.players)) {
+      if (!p.hand || p.hand.length === 0) continue;
+
+      const area = document.createElement('div');
+      area.className = 'player-area';
+      if (id === window.state.playerId) area.classList.add('me');
+
+      const header = document.createElement('div');
+      header.className = 'p-header';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'p-name';
+      if (window.state.anonMode) {
+        nameSpan.classList.add('anonyme');
+        nameSpan.textContent = id === window.state.playerId ? '👤 Moi' : '👤 Joueur';
+      } else {
+        nameSpan.textContent = id === window.state.playerId ? '👤 ' + p.name + ' (moi)' : p.name;
+      }
+      header.appendChild(nameSpan);
+
+      if (gs.phase === 'jeu' || gs.phase === 'finished') {
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'p-score';
+        scoreSpan.textContent = p.score || 0;
+        header.appendChild(scoreSpan);
+      }
+
+      area.appendChild(header);
+
+      const cardsRow = document.createElement('div');
+      cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
+      p.hand.forEach((card, i) => {
+        const faceDown = gs.phase === 'jeu' || gs.phase === 'finished' || gs.phase === 'waiting';
+        const cardEl = window.createCardElement(card, !faceDown);
+        cardEl.style.setProperty('--i', i);
+        cardsRow.appendChild(cardEl);
+      });
+      area.appendChild(cardsRow);
+      board.appendChild(area);
+    }
+  }
+
+  // === 2. Phase distribution : info + barre de progression ===
+  if (gs.phase === 'distribution') {
+    const distBox = document.createElement('div');
+    distBox.className = 'player-area';
+    distBox.style.borderColor = 'var(--green)';
+
+    const dh = document.createElement('div');
+    dh.className = 'p-header';
+    const tourDisplay = Math.min(gs.tourDistribution + 1, 4);
+    dh.textContent = '📦 Distribution — Tour ' + tourDisplay + '/4';
+    if (gs.joueurDistribution) dh.textContent += ' — ' + gs.joueurDistribution;
+    distBox.appendChild(dh);
+
+    // Barre de progression
+    const totalCartes = (gs.playerOrder || []).length * 4;
+    const cartesDist = (gs.playerOrder || []).reduce((s, id) => {
+      const p = gs.players[id];
+      return s + (p && p.hand ? p.hand.length : 0);
+    }, 0);
+    const pct = Math.round((cartesDist / totalCartes) * 100);
+
+    const barOuter = document.createElement('div');
+    barOuter.style.cssText = 'height:12px;background:var(--surface);border-radius:6px;overflow:hidden;margin:6px 0';
+    const barInner = document.createElement('div');
+    barInner.style.cssText = 'height:100%;background:var(--green);width:' + pct + '%;transition:width .3s';
+    barOuter.appendChild(barInner);
+    distBox.appendChild(barOuter);
+
+    const countLabel = document.createElement('div');
+    countLabel.style.cssText = 'font-size:.8rem;color:var(--muted);text-align:center';
+    countLabel.textContent = cartesDist + '/' + totalCartes + ' cartes distribuées';
+    distBox.appendChild(countLabel);
+
+    board.appendChild(distBox);
+  }
+
+  // === 3. Pyramide (phase jeu) ===
+  if (gs.phase === 'jeu' || gs.phase === 'finished') {
     const pBox = document.createElement('div');
     pBox.className = 'player-area';
     pBox.style.borderColor = 'var(--gold)';
@@ -24,7 +113,6 @@ window.pyramide.renderer = function(gs) {
     ph.textContent = '🔺 Pyramide';
     pBox.appendChild(ph);
 
-    // 4 lignes : ligne 4 (1) en haut, ligne 1 (4) en bas
     const rows = [
       { indices: [9], ligne: 4 },
       { indices: [7, 8], ligne: 3 },
@@ -40,10 +128,16 @@ window.pyramide.renderer = function(gs) {
       rDiv.style.cssText = 'display:flex;gap:4px;justify-content:center';
       for (const idx of row.indices) {
         const card = gs.pyramide[idx];
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:relative';
+
         const el = document.createElement('div');
         el.className = 'pyramide-card';
-        const isActive = idx === gs.indexActif && gs.phase === 'playing';
+        const isActive = idx === gs.indexActif && gs.phase === 'jeu';
         if (isActive) el.style.border = '3px solid var(--gold)';
+
+        const infos = getPyramideInfos(idx);
+        wrapper.title = 'Ligne ' + infos.ligne + ' — ' + infos.gorgees + ' gorgée' + (infos.gorgees > 1 ? 's' : '');
 
         if (card.faceUp) {
           const isRed = card.suit === 'H' || card.suit === 'D';
@@ -57,14 +151,14 @@ window.pyramide.renderer = function(gs) {
           el.style.color = '#fff';
           el.innerHTML = '<span class="pv" style="opacity:0.4">?</span>';
         }
-        rDiv.appendChild(el);
+        wrapper.appendChild(el);
+        rDiv.appendChild(wrapper);
       }
       container.appendChild(rDiv);
     }
 
     pBox.appendChild(container);
 
-    // Légende multiplicateurs
     const legend = document.createElement('div');
     legend.style.cssText = 'font-size:.75rem;color:var(--muted);margin-top:6px';
     legend.textContent = 'Ligne 1: 🍺1 | Ligne 2: 🍺🍺2 | Ligne 3: 🍺🍺🍺3 | Ligne 4: 🍺🍺🍺🍺 Cul sec';
@@ -73,157 +167,89 @@ window.pyramide.renderer = function(gs) {
     board.appendChild(pBox);
   }
 
-  // Phase distribution : afficher les mains face visible avec bouton distribuer
+  // === Status ===
+  const gsEl = window.dom['game-status'];
   if (gs.phase === 'distribution') {
-    const distBox = document.createElement('div');
-    distBox.className = 'player-area';
-    distBox.style.borderColor = 'var(--green)';
-    const dh = document.createElement('div');
-    dh.className = 'p-header';
-    dh.textContent = '📦 Distribution — Tour ' + ((gs.tourDistribution || 0) + 1) + '/4';
-    distBox.appendChild(dh);
-
-    if (gs.playerOrder) {
-      for (const id of gs.playerOrder) {
-        const p = gs.players[id];
-        if (!p || !p.hand) continue;
-        const tag = document.createElement('div');
-        tag.style.cssText = 'font-size:.85rem;padding:2px 0';
-        const name = gs.players[id] ? gs.players[id].name : id;
-        tag.textContent = '👤 ' + name + ' : ' + p.hand.length + ' carte(s)';
-        distBox.appendChild(tag);
-      }
-    }
-
-    board.appendChild(distBox);
-  }
-
-  // Phase jeu : afficher les joueurs avec leurs mains face cachée
-  if (gs.players) {
-    for (const [id, p] of Object.entries(gs.players)) {
-      if (gs.phase === 'distribution') {
-        // Afficher les mains pendant la distribution
-        if (p.hand && p.hand.length > 0) {
-          const area = document.createElement('div');
-          area.className = 'player-area';
-          if (id === window.state.playerId) area.classList.add('me');
-
-          const header = document.createElement('div');
-          header.className = 'p-header';
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'p-name';
-          if (window.state.anonMode) {
-            nameSpan.classList.add('anonyme');
-            nameSpan.textContent = id === window.state.playerId ? '👤 Moi' : '👤 Joueur';
-          } else {
-            nameSpan.textContent = id === window.state.playerId ? '👤 ' + p.name + ' (moi)' : p.name;
-          }
-          header.appendChild(nameSpan);
-          area.appendChild(header);
-
-          const cardsRow = document.createElement('div');
-          cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
-          p.hand.forEach((card, i) => {
-            const cardEl = window.createCardElement(card, false);
-            cardEl.style.setProperty('--i', i);
-            cardsRow.appendChild(cardEl);
-          });
-          area.appendChild(cardsRow);
-          board.appendChild(area);
-        }
-      } else if (gs.phase === 'playing' || gs.phase === 'finished') {
-        // En jeu : mains face cachée pour tout le monde
-        if (p.hand && p.hand.length > 0 && id === window.state.playerId) {
-          const area = document.createElement('div');
-          area.className = 'player-area';
-          area.classList.add('me');
-
-          const header = document.createElement('div');
-          header.className = 'p-header';
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'p-name';
-          nameSpan.textContent = '👤 ' + p.name + ' (moi)';
-          header.appendChild(nameSpan);
-
-          const scoreSpan = document.createElement('span');
-          scoreSpan.className = 'p-score';
-          scoreSpan.textContent = p.score || 0;
-          header.appendChild(scoreSpan);
-
-          area.appendChild(header);
-
-          const cardsRow = document.createElement('div');
-          cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
-          p.hand.forEach((card, i) => {
-            const cardEl = document.createElement('div');
-            cardEl.className = 'card';
-            cardEl.style.cssText = 'width:64px;height:89px;border-radius:8px;background:linear-gradient(135deg,#1a237e,#0d47a1);border:2px solid #fff;display:flex;align-items:center;justify-content:center';
-            cardEl.innerHTML = '<span style="opacity:0.4;letter-spacing:2px;color:#fff;font-size:1.2rem">?</span>';
-            cardEl.style.setProperty('--i', i);
-            cardsRow.appendChild(cardEl);
-          });
-          area.appendChild(cardsRow);
-          board.appendChild(area);
-        }
-
-        // Afficher aussi les autres joueurs avec leur nom et score
-        if (id !== window.state.playerId) {
-          const area = document.createElement('div');
-          area.className = 'player-area';
-          if (id === gs.joueurActif) area.style.borderColor = 'var(--gold)';
-
-          const header = document.createElement('div');
-          header.className = 'p-header';
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'p-name';
-          if (window.state.anonMode) {
-            nameSpan.classList.add('anonyme');
-            nameSpan.textContent = id === window.state.playerId ? '👤 Moi' : '👤 Joueur';
-          } else {
-            nameSpan.textContent = id === window.state.playerId ? '👤 ' + p.name + ' (moi)' : p.name;
-          }
-          if (id === gs.joueurActif) nameSpan.textContent += ' 🎯';
-          header.appendChild(nameSpan);
-
-          const scoreSpan = document.createElement('span');
-          scoreSpan.className = 'p-score';
-          scoreSpan.textContent = p.score || 0;
-          header.appendChild(scoreSpan);
-
-          area.appendChild(header);
-          board.appendChild(area);
-        }
-      }
-    }
-  }
-
-  // Status
-  if (gs.phase === 'distribution') {
-    window.dom['game-status'].textContent = '📦 Distribution des cartes — Tour ' + ((gs.tourDistribution || 0) + 1) + '/4';
-    window.dom['game-status'].className = 'game-status';
-  } else if (gs.phase === 'playing') {
-    window.dom['game-status'].textContent = '🔺 Retournez les cartes de la pyramide !';
-    window.dom['game-status'].className = 'game-status';
+    const complete = gs.tourDistribution >= 4;
+    gsEl.textContent = complete
+      ? '🧠 Toutes les cartes sont distribuées ! Mémorisez et cliquez sur "Mémoriser"'
+      : '📦 Distribution des cartes — Tour ' + (Math.min(gs.tourDistribution + 1, 4)) + '/4';
+    gsEl.className = 'game-status';
+  } else if (gs.phase === 'jeu') {
+    gsEl.textContent = '🔺 Retournez les cartes de la pyramide !';
+    gsEl.className = 'game-status';
   } else if (gs.phase === 'finished') {
-    window.dom['game-status'].className = 'game-status winner';
-    window.dom['game-status'].textContent = '🏁 Pyramide terminée !';
+    gsEl.className = 'game-status winner';
+    gsEl.textContent = '🏁 Pyramide terminée !';
   } else {
-    window.dom['game-status'].textContent = 'En attente...';
-    window.dom['game-status'].className = 'game-status waiting';
+    gsEl.textContent = 'En attente...';
+    gsEl.className = 'game-status waiting';
   }
+
+  updatePyramideControls(gs);
 };
 
-window.pyramide.init = function() {
-  setPyramideControls();
-};
+function updatePyramideControls(gs) {
+  if (window.state.isSpectator) {
+    window.dom['screen-game'].classList.add('spectator');
+    return;
+  }
+  window.dom['screen-game'].classList.remove('spectator');
 
-function setPyramideControls() {
-  window.dom.controls.innerHTML = '';
+  const controls = window.dom.controls;
+  controls.innerHTML = '';
 
-  if (window.state.isSpectator) return;
+  if (gs.phase === 'distribution') {
+    setPyramideDistributionControls(gs);
+  } else if (gs.phase === 'jeu') {
+    setPyramideGameControls(gs);
+  } else if (gs.phase === 'finished') {
+    setPyramideFinishedControls();
+  }
+}
+
+function setPyramideDistributionControls(gs) {
+  const controls = window.dom.controls;
+  const complete = gs.tourDistribution >= 4;
 
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
+  row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center';
+
+  const info = document.createElement('div');
+  info.style.cssText = 'flex:1;text-align:center;font-weight:700';
+  const tourDisplay = Math.min(gs.tourDistribution + 1, 4);
+  info.textContent = complete
+    ? '🧠 Toutes les cartes sont visibles — Mémorisez !'
+    : '📤 Distribution — Tour ' + tourDisplay + '/4 — ' + (gs.joueurDistribution || '');
+  row.appendChild(info);
+
+  const btn = document.createElement('button');
+  if (complete) {
+    btn.className = 'btn-gold';
+    btn.textContent = '🧠 Mémoriser';
+    btn.addEventListener('click', window.pyramide.memoriser);
+  } else {
+    btn.className = 'btn-green';
+    btn.textContent = '📤 Distribuer';
+    btn.addEventListener('click', window.pyramide.distribuer);
+  }
+  row.appendChild(btn);
+
+  controls.appendChild(row);
+}
+
+function setPyramideGameControls(gs) {
+  const controls = window.dom.controls;
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center';
+
+  const infos = getPyramideInfos(gs.indexActif);
+  const info = document.createElement('div');
+  info.style.cssText = 'flex:1;text-align:center;font-weight:700';
+  info.textContent = '🃏 Carte ' + (gs.indexActif + 1) + '/10 — Ligne ' + infos.ligne + ' — ' +
+    infos.gorgees + ' gorgée' + (infos.gorgees > 1 ? 's' : '');
+  row.appendChild(info);
 
   const flipBtn = document.createElement('button');
   flipBtn.className = 'btn-gold';
@@ -237,8 +263,51 @@ function setPyramideControls() {
   nextBtn.addEventListener('click', window.pyramide.nextCard);
   row.appendChild(nextBtn);
 
-  window.dom.controls.appendChild(row);
+  controls.appendChild(row);
 }
+
+function setPyramideFinishedControls() {
+  const controls = window.dom.controls;
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
+
+  const replayBtn = document.createElement('button');
+  replayBtn.className = 'btn-green';
+  replayBtn.textContent = '🔄 Nouvelle partie';
+  replayBtn.addEventListener('click', async () => {
+    if (!window.state.roomCode) return;
+    try {
+      await window.api('POST', '/api/reset', { roomCode: window.state.roomCode });
+    } catch (e) { window.showToast('Erreur : ' + e.message); }
+  });
+  row.appendChild(replayBtn);
+
+  controls.appendChild(row);
+}
+
+// --- INIT ---
+window.pyramide.init = function() {
+  // Controls are dynamic via updatePyramideControls
+};
+
+// --- ACTIONS API ---
+
+window.pyramide.distribuer = async function() {
+  if (!window.state.roomCode) return;
+  try {
+    const res = await window.api('POST', '/api/pyramide/distribuer', { roomCode: window.state.roomCode });
+    window.showToast('Carte distribuée');
+  } catch (e) { window.showToast('Erreur : ' + e.message); }
+};
+
+window.pyramide.memoriser = async function() {
+  if (!window.state.roomCode) return;
+  try {
+    const res = await window.api('POST', '/api/pyramide/memoriser', { roomCode: window.state.roomCode });
+    window.showToast('🧠 Cartes mémorisées !');
+  } catch (e) { window.showToast('Erreur : ' + e.message); }
+};
 
 window.pyramide.flipCard = async function() {
   if (!window.state.roomCode) return;
@@ -257,18 +326,6 @@ window.pyramide.nextCard = async function() {
       window.showToast('🏁 Pyramide terminée !');
     } else {
       window.showToast('Carte suivante — ligne ' + (res.ligne || '?'));
-    }
-  } catch (e) { window.showToast('Erreur : ' + e.message); }
-};
-
-window.pyramide.distribuer = async function() {
-  if (!window.state.roomCode) return;
-  try {
-    const res = await window.api('POST', '/api/pyramide/distrib', { roomCode: window.state.roomCode });
-    if (res.gameState && res.gameState.phase === 'playing') {
-      window.showToast('📦 Mémorisation terminée ! Cartes retournées.');
-    } else {
-      window.showToast('Carte distribuée');
     }
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
