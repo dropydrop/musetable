@@ -224,6 +224,20 @@ window.stopPolling = function() {
   }
 };
 
+function renderWaitingPlayers(gs) {
+  const list = window.dom['waiting-players'];
+  if (!list) return;
+  list.innerHTML = '';
+  if (gs.players) {
+    for (const [, p] of Object.entries(gs.players)) {
+      const tag = document.createElement('span');
+      tag.className = 'player-tag';
+      tag.textContent = p.name || 'Anonyme';
+      list.appendChild(tag);
+    }
+  }
+}
+
 window.pollGameState = async function() {
   if (!window.state.roomCode) { console.warn('[MuseTable] pollGameState — roomCode manquant'); return; }
   try {
@@ -242,6 +256,8 @@ window.pollGameState = async function() {
       window.state.phase = 'room';
       window.showRoom(window.state.roomCode);
     }
+    // Mettre à jour la liste des joueurs dans la salle d'attente
+    if (gs.phase === 'waiting') renderWaitingPlayers(gs);
     // Dispatch vers le renderer du mode de jeu actif
     const mode = window[gs.gameType];
     if (mode && mode.renderer) mode.renderer(gs);
