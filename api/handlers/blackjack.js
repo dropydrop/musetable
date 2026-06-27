@@ -17,15 +17,22 @@ async function startGame(room, body, res, games) {
   if (Object.keys(room.players).length === 0) { res.status(400).json({ success: false, error: 'Aucun joueur' }); return; }
   if (room.phase !== 'waiting') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
 
-  for (const p of Object.values(room.players)) {
-    p.hand.push(room.deck.pop());
-    p.hand.push(room.deck.pop());
-    p.score = calculateScore(p.hand);
+  for (const [, p] of Object.entries(room.players)) {
+    p.hand = [];
+    p.score = 0;
     p.isActive = true;
     p.stand = false;
     p.resultat = null;
+    p.gain = null;
     if (p.solde === undefined) p.solde = 100;
     p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+    if (p.mise > p.solde) p.mise = Math.max(1, Math.floor(p.solde / 2));
+  }
+
+  for (const [, p] of Object.entries(room.players)) {
+    p.hand.push(room.deck.pop());
+    p.hand.push(room.deck.pop());
+    p.score = calculateScore(p.hand);
   }
 
   room.phase = 'playing';
@@ -33,36 +40,44 @@ async function startGame(room, body, res, games) {
   room.turnIndex = 0;
   room.currentTurn = room.playerOrder[0];
   room.winners = null;
+  room.result = null;
 
-  // Vérifier blackjack naturel (21 en 2 cartes)
-  const bjPlayers = Object.entries(room.players)
-    .filter(([, p]) => p.score === 21 && p.hand.length === 2)
-    .map(([, p]) => p.name);
+  // Vérifier blackjack naturel (21 en 2 cartes) — par ID, pas par nom
+  const bjEntries = Object.entries(room.players)
+    .filter(([, p]) => p.score === 21 && p.hand.length === 2);
+  const bjIds = bjEntries.map(([id]) => id);
 
-  if (bjPlayers.length >= 1) {
+  if (bjEntries.length >= 1) {
     room.phase = 'finished';
     const miseRef = room.miseParDefaut || MISE_PAR_DEFAUT;
-    if (bjPlayers.length === 1) {
-      room.winners = bjPlayers;
+    if (bjEntries.length === 1) {
+      const bjId = bjIds[0];
+      room.winners = [room.players[bjId].name];
       room.result = 21;
-      for (const [, p] of Object.entries(room.players)) {
+      for (const [id, p] of Object.entries(room.players)) {
         const m = p.mise || miseRef;
-        if (bjPlayers.includes(p.name)) {
+        if (id === bjId) {
+          const gain = m;
+          p.solde = (p.solde || 100) + gain;
           p.resultat = 'gagné';
-          p.solde = (p.solde || 100) + m;
+          p.gain = gain;
         } else {
-          p.resultat = 'perdu';
           p.solde = (p.solde || 100) - m;
+          p.resultat = 'perdu';
+          p.gain = -m;
         }
+        p.mise = 0;
       }
     } else {
-      room.winners = bjPlayers;
+      room.winners = bjEntries.map(([, p]) => p.name);
       room.result = 21;
       for (const [, p] of Object.entries(room.players)) {
-        p.resultat = 'egalité';
+        p.resultat = null;
+        p.gain = null;
+        p.mise = 0;
       }
     }
-    res.status(200).json({ success: true, blackjack: true, winners: bjPlayers, push: bjPlayers.length > 1 });
+    res.status(200).json({ success: true, blackjack: true, winners: room.winners, push: bjEntries.length > 1 });
     return;
   }
 
@@ -146,46 +161,59 @@ async function redeal(room, body, res, games) {
   room.winners = null;
   room.result = null;
 
-  for (const p of Object.values(room.players)) {
+  for (const [, p] of Object.entries(room.players)) {
     p.hand = [];
-    p.hand.push(room.deck.pop());
-    p.hand.push(room.deck.pop());
-    p.score = calculateScore(p.hand);
+    p.score = 0;
     p.isActive = true;
     p.stand = false;
     p.resultat = null;
+    p.gain = null;
     p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+    if (p.mise > p.solde) p.mise = Math.max(1, Math.floor(p.solde / 2));
   }
 
-  // Vérifier blackjack naturel
-  const bjPlayers = Object.entries(room.players)
-    .filter(([, p]) => p.score === 21 && p.hand.length === 2)
-    .map(([, p]) => p.name);
+  for (const [, p] of Object.entries(room.players)) {
+    p.hand.push(room.deck.pop());
+    p.hand.push(room.deck.pop());
+    p.score = calculateScore(p.hand);
+  }
 
-  if (bjPlayers.length >= 1) {
+  // Vérifier blackjack naturel — par ID
+  const bjEntries = Object.entries(room.players)
+    .filter(([, p]) => p.score === 21 && p.hand.length === 2);
+  const bjIds = bjEntries.map(([id]) => id);
+
+  if (bjEntries.length >= 1) {
     room.phase = 'finished';
     const miseRef = room.miseParDefaut || MISE_PAR_DEFAUT;
-    if (bjPlayers.length === 1) {
-      room.winners = bjPlayers;
+    if (bjEntries.length === 1) {
+      const bjId = bjIds[0];
+      room.winners = [room.players[bjId].name];
       room.result = 21;
-      for (const [, p] of Object.entries(room.players)) {
+      for (const [id, p] of Object.entries(room.players)) {
         const m = p.mise || miseRef;
-        if (bjPlayers.includes(p.name)) {
+        if (id === bjId) {
+          const gain = m;
+          p.solde = (p.solde || 100) + gain;
           p.resultat = 'gagné';
-          p.solde = (p.solde || 100) + m;
+          p.gain = gain;
         } else {
-          p.resultat = 'perdu';
           p.solde = (p.solde || 100) - m;
+          p.resultat = 'perdu';
+          p.gain = -m;
         }
+        p.mise = 0;
       }
     } else {
-      room.winners = bjPlayers;
+      room.winners = bjEntries.map(([, p]) => p.name);
       room.result = 21;
       for (const [, p] of Object.entries(room.players)) {
-        p.resultat = 'egalité';
+        p.resultat = null;
+        p.gain = null;
+        p.mise = 0;
       }
     }
-    res.status(200).json({ success: true, blackjack: true, winners: bjPlayers, push: bjPlayers.length > 1 });
+    res.status(200).json({ success: true, blackjack: true, winners: room.winners, push: bjEntries.length > 1 });
     return;
   }
 

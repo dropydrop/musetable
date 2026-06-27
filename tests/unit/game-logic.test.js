@@ -174,8 +174,14 @@ test('checkGameFinished — meilleur score gagne', () => {
   assert.strictEqual(room.phase, 'finished');
   assert.deepStrictEqual(room.winners, ['Alice']);
   assert.strictEqual(room.result, 20);
-  assert.strictEqual(room.players.a.solde, 110); // +10
+  assert.strictEqual(room.players.a.solde, 110); // +10 (mise de Bob)
+  assert.strictEqual(room.players.a.resultat, 'gagné');
+  assert.strictEqual(room.players.a.gain, 10);
   assert.strictEqual(room.players.b.solde, 90);  // -10
+  assert.strictEqual(room.players.b.resultat, 'perdu');
+  assert.strictEqual(room.players.b.gain, -10);
+  assert.strictEqual(room.players.a.mise, 0);
+  assert.strictEqual(room.players.b.mise, 0);
 });
 
 test('checkGameFinished — égalité entre deux joueurs (push)', () => {
@@ -194,12 +200,15 @@ test('checkGameFinished — égalité entre deux joueurs (push)', () => {
   assert.ok(room.winners.includes('Alice'));
   assert.ok(room.winners.includes('Bob'));
   assert.strictEqual(room.result, 20);
-  // Push : pas de mouvement de solde
+  // Push : pas de mouvement
   assert.strictEqual(room.players.a.solde, 100);
   assert.strictEqual(room.players.b.solde, 100);
+  assert.strictEqual(room.players.a.resultat, null);
+  assert.strictEqual(room.players.a.gain, null);
+  assert.strictEqual(room.players.a.mise, 0);
 });
 
-test('checkGameFinished — tous bust = personne ne gagne, pas de perte', () => {
+test('checkGameFinished — tous bust = tout le monde perd sa mise', () => {
   const room = {
     players: {
       a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }, { suit: 'D', value: '5' }], score: 25, isActive: false, stand: true, solde: 100, mise: 10 },
@@ -214,9 +223,12 @@ test('checkGameFinished — tous bust = personne ne gagne, pas de perte', () => 
   assert.strictEqual(room.phase, 'finished');
   assert.strictEqual(room.winners[0], 'Personne (tous ont dépassé 21)');
   assert.strictEqual(room.result, 0);
-  // Pas de perte quand tout le monde bust
-  assert.strictEqual(room.players.a.solde, 100);
-  assert.strictEqual(room.players.b.solde, 100);
+  // Tous bust → tous perdent leur mise
+  assert.strictEqual(room.players.a.solde, 90);
+  assert.strictEqual(room.players.b.solde, 90);
+  assert.strictEqual(room.players.a.mise, 0);
+  assert.strictEqual(room.players.a.resultat, 'perdu');
+  assert.strictEqual(room.players.a.gain, -10);
 });
 
 test('checkGameFinished — joueurs encore actifs = pas fini', () => {
@@ -272,8 +284,12 @@ test('nextTurn — auto-stand du joueur suivant si le précédent a bust', () =>
   // Partie finie car tout le monde est done
   assert.strictEqual(room.phase, 'finished');
   assert.deepStrictEqual(room.winners, ['Bob']);
-  assert.strictEqual(room.players.b.solde, 110); // Bob gagne
-  assert.strictEqual(room.players.a.solde, 90);  // Alice perd
+  assert.strictEqual(room.players.b.solde, 110); // Bob gagne (+10)
+  assert.strictEqual(room.players.b.resultat, 'gagné');
+  assert.strictEqual(room.players.b.gain, 10);
+  assert.strictEqual(room.players.a.solde, 90);  // Alice perd (-10)
+  assert.strictEqual(room.players.a.resultat, 'perdu');
+  assert.strictEqual(room.players.a.gain, -10);
 });
 
 test('calculateScore — As + As + As + As = 14 (1+1+1+11)', () => {

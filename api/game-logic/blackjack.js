@@ -56,56 +56,77 @@ function nextTurn(room) {
 
 /**
  * Vérifie si tous les joueurs ont fini, détermine le(s) gagnant(s) et met à jour les soldes.
- * - 1 winner +:mise pour lui, -:mise pour les autres
+ * - 1 winner : gagne sa mise + les mises des perdants
  * - Push (égalité) : personne ne gagne ni ne perd (soldes inchangés)
- * - Tous bust : personne ne gagne ni ne perd
+ * - Tous bust : tous perdent leur mise
  */
 function checkGameFinished(room) {
-  const players = Object.values(room.players);
-  const allDone = players.every(p => !p.isActive || p.stand);
-  if (!allDone || players.length === 0) return;
+  const entries = Object.entries(room.players);
+  const allDone = entries.every(([, p]) => !p.isActive || p.stand);
+  if (!allDone || entries.length === 0) return;
 
   room.phase = 'finished';
 
   // Recalculer les scores finaux
-  for (const p of players) {
+  for (const [, p] of entries) {
     p.score = calculateScore(p.hand);
   }
 
-  let bestScore = 0;
-  let winners = [];
+  // Séparer valides (≤21) et busts (>21)
+  const valides = entries.filter(([, p]) => p.score <= 21);
+  const busts = entries.filter(([, p]) => p.score > 21);
 
-  for (const p of players) {
-    if (p.score <= 21 && p.score > bestScore) {
-      bestScore = p.score;
-      winners = [p.name];
-    } else if (p.score <= 21 && p.score === bestScore) {
-      winners.push(p.name);
+  // Tous bust → tout le monde perd sa mise
+  if (valides.length === 0) {
+    for (const [id, p] of entries) {
+      p.solde = (p.solde || 100) - (p.mise || MISE_PAR_DEFAUT);
+      p.mise = 0;
+      p.resultat = 'perdu';
+      p.gain = -(p.mise || MISE_PAR_DEFAUT);
     }
+    room.winners = ['Personne (tous ont dépassé 21)'];
+    room.result = 0;
+    return;
   }
 
-  const isEveryoneBust = winners.length === 0;
-  const winnerNames = isEveryoneBust ? ['Personne (tous ont dépassé 21)'] : winners;
-  const isPush = winners.length > 1;
+  // Trouver le meilleur score parmi les valides
+  let bestScore = 0;
+  for (const [, p] of valides) {
+    if (p.score > bestScore) bestScore = p.score;
+  }
 
-  room.winners = winnerNames;
+  const winnerEntries = valides.filter(([, p]) => p.score === bestScore);
+  const winnerIds = winnerEntries.map(([id]) => id);
+  const isPush = winnerEntries.length > 1;
+
+  room.winners = winnerEntries.map(([, p]) => p.name);
   room.result = bestScore;
 
-  // Résultat individuel et soldes
+  // Mise à jour des soldes par ID (pas par nom)
   const miseRef = room.miseParDefaut || MISE_PAR_DEFAUT;
-  for (const [, p] of Object.entries(room.players)) {
+  for (const [id, p] of entries) {
     if (p.solde === undefined) p.solde = 100;
     const m = p.mise || miseRef;
 
-    if (isEveryoneBust || isPush) {
-      p.resultat = null; // pas de mouvement
-    } else if (winners.includes(p.name)) {
+    if (isPush) {
+      // Push : pas de mouvement
+      p.resultat = null;
+      p.gain = null;
+    } else if (winnerIds.includes(id)) {
+      // Gagnant unique : prend la mise des perdants (sa propre mise reste en solde)
+      const misePerdants = entries
+        .filter(([oid]) => !winnerIds.includes(oid))
+        .reduce((sum, [, op]) => sum + (op.mise || miseRef), 0);
+      p.solde += misePerdants;
       p.resultat = 'gagné';
-      p.solde += m;
+      p.gain = misePerdants;
     } else {
-      p.resultat = 'perdu';
+      // Perdant
       p.solde -= m;
+      p.resultat = 'perdu';
+      p.gain = -m;
     }
+    p.mise = 0;
   }
 }
 

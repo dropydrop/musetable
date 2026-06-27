@@ -143,7 +143,9 @@ module.exports = async (req, res) => {
           isActive: room.gameType === 'free' ? true : p.isActive,
           stand: room.gameType === 'free' ? false : p.stand,
           solde: p.solde,
-          mise: p.mise
+          mise: p.mise,
+          resultat: p.resultat,
+          gain: p.gain
         };
       }
       res.status(200).json({ success: true, gameState: publicState });

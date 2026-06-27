@@ -74,12 +74,12 @@ window.blackjack.renderer = function(gs) {
       if (p.resultat === 'gagné') {
         const winBadge = document.createElement('div');
         winBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--gold);font-size:.9rem';
-        winBadge.textContent = '🏆 Gagnant ! +' + (p.mise || 0);
+        winBadge.textContent = '🏆 Gagnant ! +' + (p.gain > 0 ? p.gain : 0);
         area.appendChild(winBadge);
       } else if (p.resultat === 'perdu') {
         const loseBadge = document.createElement('div');
         loseBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--red);font-size:.9rem';
-        loseBadge.textContent = p.score > 21 ? '💥 Dépassé -' + (p.mise || 0) : '💥 Perdant -' + (p.mise || 0);
+        loseBadge.textContent = (p.score > 21 ? '💥 Dépassé ' : '💥 Perdant ') + (p.gain < 0 ? p.gain : '-' + (p.mise || 10));
         area.appendChild(loseBadge);
       }
     }
@@ -100,9 +100,14 @@ window.blackjack.renderer = function(gs) {
     updateBlackjackControls(gs);
   } else if (gs.phase === 'finished') {
     gsEl.className = 'game-status winner';
-    const w = gs.winners ? gs.winners.join(', ') : '?';
-    const isPush = gs.winners && gs.winners.length > 1 && gs.winners[0] !== 'Personne (tous ont dépassé 21)';
-    gsEl.textContent = isPush ? '🤝 ' + w + ' — Égalité (push), pas de perte' : '🏆 ' + w + ' — Manche terminée';
+    const isAllBust = gs.winners && gs.winners.length === 1 && gs.winners[0] === 'Personne (tous ont dépassé 21)';
+    if (isAllBust) {
+      gsEl.textContent = '💥 Tout le monde a bust ! Tout le monde perd sa mise.';
+    } else {
+      const w = gs.winners ? gs.winners.join(', ') : '?';
+      const isPush = gs.winners && gs.winners.length > 1;
+      gsEl.textContent = isPush ? '🤝 ' + w + ' — Égalité (push), pas de perte' : '🏆 ' + w + ' — Manche terminée';
+    }
     updateBlackjackControls(gs);
   } else if (gs.phase === 'waiting') {
     gsEl.className = 'game-status waiting';
