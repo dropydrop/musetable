@@ -1,6 +1,8 @@
 /* game-blackjack.js — Rendu et contrôles du Blackjack */
 
-window.blackjackRenderer = function(gs) {
+window.blackjack = {};
+
+window.blackjack.renderer = function(gs) {
   if (!gs) return;
   const phaseLabels = { waiting:'En attente', playing:'En cours', finished:'Terminée' };
   window.dom['phase-badge'].textContent = phaseLabels[gs.phase] || gs.phase;
@@ -116,7 +118,7 @@ function updateBlackjackControls(gs) {
   }
 }
 
-window.renderResult = function(gs) {
+window.blackjack.renderResult = function(gs) {
   window.dom['result-overlay'].classList.add('show');
   if (gs.winners) {
     if (gs.winners.length === 1 && gs.winners[0] === 'Personne (tous ont dépassé 21)') {
@@ -136,7 +138,7 @@ window.renderResult = function(gs) {
   }
 };
 
-window.blackjackInit = function() {
+window.blackjack.init = function() {
   window.dom['btn-hit'].addEventListener('click', async () => {
     if (!window.state.roomCode || !window.state.playerId) return;
     try { await window.api('POST', '/api/hit', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }

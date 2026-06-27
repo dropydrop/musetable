@@ -1,6 +1,8 @@
 /* game-bizkit.js — Rendu et contrôles du mode Bizkit */
 
-window.bizkitRenderer = function(gs) {
+window.bizkit = {};
+
+window.bizkit.renderer = function(gs) {
   if (!gs) return;
   const board = window.dom.board;
   board.innerHTML = '';
@@ -71,7 +73,7 @@ window.bizkitRenderer = function(gs) {
   }
 };
 
-window.bizkitInit = function() {
+window.bizkit.init = function() {
   setBizkitControls();
 };
 
@@ -83,7 +85,7 @@ function setBizkitControls() {
   rollBtn.className = 'btn-gold';
   rollBtn.id = 'btn-bizkit-roll';
   rollBtn.textContent = '🎲 Lancer';
-  rollBtn.addEventListener('click', bizkitRollDice);
+  rollBtn.addEventListener('click', window.bizkit.rollDice);
   controls.appendChild(rollBtn);
 
   const nextBtn = document.createElement('button');
@@ -91,13 +93,13 @@ function setBizkitControls() {
   nextBtn.id = 'btn-bizkit-next';
   nextBtn.textContent = '⏭️ Joueur suivant';
   nextBtn.disabled = true;
-  nextBtn.addEventListener('click', nextTurn);
+  nextBtn.addEventListener('click', window.bizkit.nextTurn);
   controls.appendChild(nextBtn);
 
   window._bizkitNextBtn = nextBtn;
 }
 
-async function bizkitRollDice() {
+window.bizkit.rollDice = async function() {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     const res = await window.api('POST', '/api/bizkit/roll', {
@@ -113,9 +115,9 @@ async function bizkitRollDice() {
   } catch (e) {
     window.showToast('Erreur : ' + e.message);
   }
-}
+};
 
-async function nextTurn() {
+window.bizkit.nextTurn = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/bizkit/next', {
@@ -129,4 +131,4 @@ async function nextTurn() {
   } catch (e) {
     window.showToast('Erreur : ' + e.message);
   }
-}
+};

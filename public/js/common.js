@@ -161,13 +161,8 @@ window.switchGameMode = function(gameType) {
   if (window._currentGameMode === gameType) return;
   window._currentGameMode = gameType;
 
-  if (gameType === 'blackjack' && window.blackjackInit) {
-    window.blackjackInit();
-  } else if (gameType === 'free' && window.freeInit) {
-    window.freeInit();
-  } else if (gameType === 'bizkit' && window.bizkitInit) {
-    window.bizkitInit();
-  }
+  const mode = window[gameType];
+  if (mode && mode.init) mode.init();
 };
 
 // --- Polling
@@ -196,20 +191,15 @@ window.pollGameState = async function() {
     }
     if (gs.phase === 'finished' && window.state.phase === 'playing') {
       window.state.phase = 'finished';
-      if (gs.gameType === 'blackjack' && window.renderResult) window.renderResult(gs);
+      if (gs.gameType === 'blackjack' && window.blackjack && window.blackjack.renderResult) window.blackjack.renderResult(gs);
     }
     if (gs.phase === 'waiting' && (window.state.phase === 'playing' || window.state.phase === 'finished')) {
       window.state.phase = 'room';
       window.showRoom(window.state.roomCode);
     }
     // Dispatch vers le renderer du mode de jeu actif
-    const renderers = {
-      blackjack: window.blackjackRenderer,
-      free: window.freeRenderer,
-      bizkit: window.bizkitRenderer
-    };
-    const fn = renderers[gs.gameType];
-    if (fn) fn(gs);
+    const mode = window[gs.gameType];
+    if (mode && mode.renderer) mode.renderer(gs);
   } catch (_) {}
 };
 

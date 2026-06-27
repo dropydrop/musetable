@@ -31,7 +31,9 @@ function addLongPress(el, onLongPress, onClick) {
   });
 }
 
-window.freeRenderer = function(gs) {
+window.free = {};
+
+window.free.renderer = function(gs) {
   if (!gs) return;
   window.dom['phase-badge'].textContent = 'Libre';
   window.dom['game-type-badge'].textContent = window.getGameTypeLabel(gs.gameType);
@@ -64,8 +66,8 @@ window.freeRenderer = function(gs) {
         wrapper.style.cursor = 'pointer';
         wrapper.title = 'Cliquer : reprendre · Double-clic : retourner';
         addLongPress(wrapper,
-          () => flipCard(i),
-          () => pickupCard(i)
+          () => window.free.flipCard(i),
+          () => window.free.pickupCard(i)
         );
       }
       wrapper.appendChild(window.createCardElement(card, card.faceUp));
@@ -125,8 +127,8 @@ window.freeRenderer = function(gs) {
           wrapper.style.cursor = 'pointer';
           wrapper.title = 'Clic : poser · Double-clic : retourner';
           addLongPress(wrapper,
-            () => flipHandCard(i),
-            () => playCard(i)
+            () => window.free.flipHandCard(i),
+            () => window.free.playCard(i)
           );
         }
         wrapper.appendChild(window.createCardElement(card));
@@ -152,10 +154,10 @@ window.freeRenderer = function(gs) {
 function setFreeControls() {
   window.dom.controls.innerHTML = '';
   const btns = [
-    { id:'btn-free-draw', text:'🃏 Joueur pioche 1', cls:'btn-primary', action: drawCards },
-    { id:'btn-free-deal', text:'♠ Distribuer 1 chacun', cls:'btn-green', action: dealCards },
-    { id:'btn-free-shuffle', text:'🔀 Mélanger le deck', cls:'btn-outline', action: shuffleDeck },
-    { id:'btn-free-reset', text:'🔄 Reset tout', cls:'btn-outline', action: resetGame }
+    { id:'btn-free-draw', text:'🃏 Joueur pioche 1', cls:'btn-primary', action: window.free.drawCards },
+    { id:'btn-free-deal', text:'♠ Distribuer 1 chacun', cls:'btn-green', action: window.free.dealCards },
+    { id:'btn-free-shuffle', text:'🔀 Mélanger le deck', cls:'btn-outline', action: window.free.shuffleDeck },
+    { id:'btn-free-reset', text:'🔄 Reset tout', cls:'btn-outline', action: window.free.resetGame }
   ];
   btns.forEach(b => {
     const btn = document.createElement('button');
@@ -173,7 +175,7 @@ function setFreeControls() {
   const minusBtn = document.createElement('button');
   minusBtn.textContent = '➖';
   minusBtn.className = 'btn-outline';
-  minusBtn.addEventListener('click', () => freeSetDiceCount(-1));
+  minusBtn.addEventListener('click', () => window.free.setDiceCount(-1));
 
   const countDisplay = document.createElement('span');
   countDisplay.id = 'dice-count-display';
@@ -183,12 +185,12 @@ function setFreeControls() {
   const plusBtn = document.createElement('button');
   plusBtn.textContent = '➕';
   plusBtn.className = 'btn-outline';
-  plusBtn.addEventListener('click', () => freeSetDiceCount(1));
+  plusBtn.addEventListener('click', () => window.free.setDiceCount(1));
 
   const rollBtn = document.createElement('button');
   rollBtn.textContent = '🎲 Lancer';
   rollBtn.className = 'btn-gold';
-  rollBtn.addEventListener('click', freeRollDice);
+  rollBtn.addEventListener('click', window.free.rollDice);
 
   diceRow.appendChild(minusBtn);
   diceRow.appendChild(countDisplay);
@@ -197,25 +199,25 @@ function setFreeControls() {
   window.dom.controls.appendChild(diceRow);
 }
 
-async function drawCards() {
+window.free.drawCards = async function() {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     const res = await window.api('POST', '/api/free/draw', { roomCode: window.state.roomCode, playerId: window.state.playerId, count: 1 });
     window.showToast(res.cards.length + ' carte(s) piochée(s)');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function dealCards() {
+window.free.dealCards = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/free/deal', { roomCode: window.state.roomCode, count: 1 });
     window.showToast('1 carte distribuée à chaque joueur');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function freeRollDice() {
+window.free.rollDice = async function() {
   if (!window.state.roomCode) {
     window.showToast('Erreur : roomCode non défini');
     return;
@@ -225,9 +227,9 @@ async function freeRollDice() {
     window.showToast('🎲 Lancé en cours...');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function freeSetDiceCount(delta) {
+window.free.setDiceCount = async function(delta) {
   const display = document.getElementById('dice-count-display');
   const current = parseInt(display.textContent.replace('🎲 x', '')) || 1;
   const count = current + delta;
@@ -242,63 +244,63 @@ async function freeSetDiceCount(delta) {
   } catch (e) {
     window.showToast('Erreur : ' + e.message);
   }
-}
+};
 
-async function shuffleDeck() {
+window.free.shuffleDeck = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/free/shuffle', { roomCode: window.state.roomCode });
     window.showToast('Deck mélangé');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function playCard(cardIndex) {
+window.free.playCard = async function(cardIndex) {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     await window.api('POST', '/api/free/play', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex });
     window.showToast('Carte posée');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function flipCard(cardIndex) {
+window.free.flipCard = async function(cardIndex) {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/free/flip', { roomCode: window.state.roomCode, cardIndex });
     window.showToast('Carte retournée');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function pickupCard(cardIndex) {
+window.free.pickupCard = async function(cardIndex) {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     await window.api('POST', '/api/free/pickup', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex });
     window.showToast('Carte reprise');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function flipHandCard(cardIndex) {
+window.free.flipHandCard = async function(cardIndex) {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     await window.api('POST', '/api/free/flip-hand', { roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex });
     window.showToast('Carte retournée');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
-async function resetGame() {
+window.free.resetGame = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/free/reset', { roomCode: window.state.roomCode });
     window.showToast('Table réinitialisée');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
-}
+};
 
 // Initialiser les contrôles libres (appelé par common.js au passage en jeu)
-window.freeInit = function() {
+window.free.init = function() {
   setFreeControls();
 };
