@@ -5,10 +5,16 @@ window.bizkit = {};
 window.bizkit.renderer = function(gs) {
   if (!gs) return;
   const board = window.dom.board;
+
+  // Sauvegarder la zone dés si une animation est en cours
+  let savedDice = null;
+  if (window._diceRolling.active) {
+    savedDice = board.querySelector('.dice-area');
+  }
   board.innerHTML = '';
 
-  // Zone des dés (plateau)
-  if (gs.lastDice && gs.lastDice.results) {
+  // Zone des dés (plateau) — sauf si animation active
+  if (gs.lastDice && gs.lastDice.results && !savedDice) {
     const diceArea = document.createElement('div');
     diceArea.className = 'player-area dice-area';
     diceArea.style.borderColor = 'var(--gold)';
@@ -23,10 +29,15 @@ window.bizkit.renderer = function(gs) {
     const diceRow = document.createElement('div');
     diceRow.className = 'cards-row dice-row';
     for (const val of gs.lastDice.results) {
-      diceRow.appendChild(window.createDiceElement(val, window._diceRolling.active));
+      diceRow.appendChild(window.createDiceElement(val, false));
     }
     diceArea.appendChild(diceRow);
     board.appendChild(diceArea);
+  }
+
+  // Restaurer la zone dés animée
+  if (savedDice) {
+    board.appendChild(savedDice);
   }
 
   // Joueurs
@@ -110,7 +121,6 @@ window.bizkit.rollDice = async function() {
     const results = res.results;
 
     window._diceRolling.results = results;
-    window._diceRolling.active = true;
 
     let diceArea = document.querySelector('.dice-area');
     if (!diceArea) {

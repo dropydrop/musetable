@@ -41,6 +41,12 @@ window.free.renderer = function(gs) {
   if (rt) rt.textContent = 'Jeu : ' + window.getGameTypeLabel(gs.gameType);
 
   const board = window.dom.board;
+
+  // Sauvegarder la zone dés si une animation est en cours
+  let savedDice = null;
+  if (window._diceRolling.active) {
+    savedDice = board.querySelector('.dice-area');
+  }
   board.innerHTML = '';
   const players = Object.entries(gs.players || {});
   const myId = window.state.playerId;
@@ -79,8 +85,8 @@ window.free.renderer = function(gs) {
     board.appendChild(tableArea);
   }
 
-  // Résultats dés
-  if (gs.lastDice && gs.lastDice.results) {
+  // Résultats dés (sauf si animation active — on garde les éléments animés)
+  if (gs.lastDice && gs.lastDice.results && !savedDice) {
     const diceArea = document.createElement('div');
     diceArea.className = 'player-area dice-area';
     diceArea.style.borderColor = 'var(--green)';
@@ -94,10 +100,15 @@ window.free.renderer = function(gs) {
     const diceRow = document.createElement('div');
     diceRow.className = 'cards-row dice-row';
     for (const val of gs.lastDice.results) {
-      diceRow.appendChild(window.createDiceElement(val, window._diceRolling.active));
+      diceRow.appendChild(window.createDiceElement(val, false));
     }
     diceArea.appendChild(diceRow);
     board.appendChild(diceArea);
+  }
+
+  // Restaurer la zone dés animée
+  if (savedDice) {
+    board.appendChild(savedDice);
   }
 
   // Joueurs
@@ -233,7 +244,6 @@ window.free.rollDice = async function() {
     const results = res.results;
 
     window._diceRolling.results = results;
-    window._diceRolling.active = true;
 
     // Créer les dés roulants dans le board
     let diceArea = document.querySelector('.dice-area');

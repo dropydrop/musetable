@@ -132,7 +132,6 @@ window.updateDiceDots = function(diceEl, value) {
 window._diceRolling = { active: false, results: null };
 
 window.startDiceRolling = function(diceElements, finalResults) {
-  if (window._diceRolling.active) return;
   window._diceRolling.active = true;
 
   const values = [1, 2, 3, 4, 5, 6];
