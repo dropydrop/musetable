@@ -7,8 +7,8 @@ window.bizkit.renderer = function(gs) {
   const board = window.dom.board;
   board.innerHTML = '';
 
-  // Zone des dés (plateau)
-  if (gs.lastDice && gs.lastDice.results) {
+  // Zone des dés (plateau) — sauté si une animation est active
+  if (!window._diceRolling.active && gs.lastDice && gs.lastDice.results) {
     const diceArea = document.createElement('div');
     diceArea.className = 'player-area';
     diceArea.style.borderColor = 'var(--gold)';
@@ -100,18 +100,39 @@ function setBizkitControls() {
 }
 
 window.bizkit.rollDice = async function() {
+  if (window._diceRolling.active) return;
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     const res = await window.api('POST', '/api/bizkit/roll', {
       roomCode: window.state.roomCode,
       playerId: window.state.playerId
     });
+    const results = res.results;
+    const board = window.dom.board;
+    const diceArea = document.createElement('div');
+    diceArea.className = 'player-area dice-area';
+    diceArea.style.borderColor = 'var(--gold)';
+    const dh = document.createElement('div');
+    dh.className = 'p-header';
+    const dl = document.createElement('span');
+    dl.className = 'p-name';
+    dl.textContent = '🎲 ' + (res.playerName || 'Dés');
+    dh.appendChild(dl);
+    diceArea.appendChild(dh);
+    const diceRow = document.createElement('div');
+    diceRow.className = 'cards-row dice-row';
+    for (const val of results) {
+      diceRow.appendChild(window.createDiceElement(val, true));
+    }
+    diceArea.appendChild(diceRow);
+    board.appendChild(diceArea);
+    window.startDiceRolling(results);
     const btn = window._bizkitNextBtn;
     if (btn) {
       btn.disabled = false;
       btn.textContent = '⏭️ Joueur suivant';
     }
-    window.showToast('🎲 Lancé en cours...');
+    window.showToast('🎲 Lancé !');
   } catch (e) {
     window.showToast('Erreur : ' + e.message);
   }

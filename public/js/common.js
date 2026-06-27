@@ -83,21 +83,19 @@ window.createCardElement = function(card, faceUp) {
   return div;
 };
 
-window.createDiceElement = function(value) {
-  // Positions des points pour chaque valeur (grille 3x3)
-  const positions = {
+window._getDicePositions = function(value) {
+  return ({
     1: [[1,1]],
     2: [[0,0],[2,2]],
     3: [[0,0],[1,1],[2,2]],
     4: [[0,0],[0,2],[2,0],[2,2]],
     5: [[0,0],[0,2],[1,1],[2,0],[2,2]],
     6: [[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]]
-  };
-  const dice = document.createElement('div');
-  dice.className = 'dice';
-  const grid = document.createElement('div');
-  grid.className = 'dice-grid';
-  const dots = positions[value] || [];
+  })[value] || [];
+};
+
+window._buildDiceGrid = function(grid, value) {
+  const dots = window._getDicePositions(value);
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
       const cell = document.createElement('div');
@@ -110,8 +108,66 @@ window.createDiceElement = function(value) {
       grid.appendChild(cell);
     }
   }
+};
+
+window.createDiceElement = function(value, isRolling) {
+  const dice = document.createElement('div');
+  dice.className = 'dice';
+  if (isRolling) dice.classList.add('rolling');
+  const grid = document.createElement('div');
+  grid.className = 'dice-grid';
+  window._buildDiceGrid(grid, value);
   dice.appendChild(grid);
   return dice;
+};
+
+window.updateDiceDots = function(diceEl, value) {
+  const grid = diceEl.querySelector('.dice-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  window._buildDiceGrid(grid, value);
+};
+
+// --- État de lancer de dés (animation)
+window._diceRolling = { active: false };
+
+window.startDiceRolling = function(results) {
+  if (window._diceRolling.active) return;
+  window._diceRolling.active = true;
+
+  const diceEls = Array.from(document.querySelectorAll('.dice.rolling'));
+  if (diceEls.length === 0) { window._diceRolling.active = false; return; }
+
+  const values = [1,2,3,4,5,6];
+  let tick = 0;
+
+  const interval = setInterval(() => {
+    const val = values[tick % 6];
+    diceEls.forEach(el => window.updateDiceDots(el, val));
+    tick++;
+  }, 80);
+
+  const finalResults = results || [];
+
+  const stop = function() {
+    clearInterval(interval);
+    if (window._diceRolling._timeout) clearTimeout(window._diceRolling._timeout);
+    window._diceRolling.active = false;
+    diceEls.forEach((el, i) => {
+      el.classList.remove('rolling');
+      if (i < finalResults.length) window.updateDiceDots(el, finalResults[i]);
+    });
+  };
+
+  window._diceRolling._timeout = setTimeout(stop, 2500);
+  return stop;
+};
+
+// --- Détermination de la disposition des cartes
+window.getCardLayout = function(hand) {
+  if (!hand || hand.length <= 5) return 'fan';
+  if (hand.length <= 10) return 'grid';
+  return 'scroll';
 };
 
 window.showToast = function(msg, duration) {

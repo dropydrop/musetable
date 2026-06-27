@@ -61,16 +61,25 @@ button:active{transform:scale(.96)}
 .player-area .p-header .p-score.blackjack{color:var(--gold)}
 .player-area .p-status{font-size:.8rem;color:var(--muted)}
 .cards-row{display:flex;gap:6px;flex-wrap:wrap}
+/* Cartes en éventail (2-5) */
+.cards-row.fan{display:flex;gap:2px;flex-wrap:nowrap;justify-content:center;padding:4px 0}
+.cards-row.fan .card{transform:rotate(calc(var(--i,0)*4deg - 8deg));transform-origin:bottom center;margin-left:-16px}
+.cards-row.fan .card:first-child{margin-left:0}
+.cards-row.fan .card:last-child{margin-right:8px}
+/* Cartes en grille (6+) */
+.cards-row.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px}
 .card{width:64px;height:89px;border-radius:8px;flex-shrink:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;position:relative}
 .card-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
 .card-value{font-size:1.6rem;font-weight:800;line-height:1}
 .card-suit{font-size:1.2rem;line-height:1}
 .card.red{color:#d32f2f}
 .card.black{color:#222}
-/* Dés visuels */
-.dice{width:56px;height:56px;background:#fff;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.3);padding:6px;display:flex;align-items:center;justify-content:center}
+/* Dés visuels — agrandis ×1.5 + animation */
+.dice{width:84px;height:84px;background:#fff;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.3);padding:10px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.dice.rolling{animation:dice-roll .12s infinite alternate}
+@keyframes dice-roll{0%{transform:rotate(-6deg) scale(0.95)}100%{transform:rotate(6deg) scale(1.05)}}
 .dice-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%}
-.dot{width:8px;height:8px;background:#222;border-radius:50%;align-self:center;justify-self:center}
+.dot{width:12px;height:12px;background:#222;border-radius:50%;align-self:center;justify-self:center}
 /* Controls */
 .controls{flex-shrink:0;padding:16px;display:flex;gap:12px;justify-content:center;background:var(--surface);border-top:1px solid #222}
 .controls button{flex:1;max-width:180px;padding:16px;font-size:1.1rem;border-radius:12px;font-weight:700}

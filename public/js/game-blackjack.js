@@ -54,8 +54,12 @@ window.blackjack.renderer = function(gs) {
 
     if (p.hand && p.hand.length > 0) {
       const cardsRow = document.createElement('div');
-      cardsRow.className = 'cards-row';
-      for (const card of p.hand) cardsRow.appendChild(window.createCardElement(card));
+      cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
+      p.hand.forEach((card, i) => {
+        const cardEl = window.createCardElement(card);
+        cardEl.style.setProperty('--i', i);
+        cardsRow.appendChild(cardEl);
+      });
       area.appendChild(cardsRow);
     }
 

@@ -59,7 +59,7 @@ window.free.renderer = function(gs) {
     tableArea.appendChild(th);
 
     const cardsRow = document.createElement('div');
-    cardsRow.className = 'cards-row';
+    cardsRow.className = 'cards-row ' + window.getCardLayout(gs.table);
     gs.table.forEach((card, i) => {
       const wrapper = document.createElement('div');
       if (!window.state.isSpectator) {
@@ -70,15 +70,17 @@ window.free.renderer = function(gs) {
           () => window.free.pickupCard(i)
         );
       }
-      wrapper.appendChild(window.createCardElement(card, card.faceUp));
+      const cardEl = window.createCardElement(card, card.faceUp);
+      cardEl.style.setProperty('--i', i);
+      wrapper.appendChild(cardEl);
       cardsRow.appendChild(wrapper);
     });
     tableArea.appendChild(cardsRow);
     board.appendChild(tableArea);
   }
 
-  // Résultats dés
-  if (gs.lastDice && gs.lastDice.results) {
+  // Résultats dés (sauté si une animation de lancer est active)
+  if (!window._diceRolling.active && gs.lastDice && gs.lastDice.results) {
     const diceArea = document.createElement('div');
     diceArea.className = 'player-area';
     diceArea.style.borderColor = 'var(--green)';
@@ -120,7 +122,7 @@ window.free.renderer = function(gs) {
 
     if (p.hand && p.hand.length > 0) {
       const cardsRow = document.createElement('div');
-      cardsRow.className = 'cards-row';
+      cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
       p.hand.forEach((card, i) => {
         const wrapper = document.createElement('div');
         if (id === myId && !window.state.isSpectator) {
@@ -131,7 +133,9 @@ window.free.renderer = function(gs) {
             () => window.free.playCard(i)
           );
         }
-        wrapper.appendChild(window.createCardElement(card));
+        const cardEl = window.createCardElement(card);
+        cardEl.style.setProperty('--i', i);
+        wrapper.appendChild(cardEl);
         cardsRow.appendChild(wrapper);
       });
       area.appendChild(cardsRow);
@@ -218,14 +222,35 @@ window.free.dealCards = async function() {
 };
 
 window.free.rollDice = async function() {
+  if (window._diceRolling.active) return;
   if (!window.state.roomCode) {
     window.showToast('Erreur : roomCode non défini');
     return;
   }
   console.log('[MuseTable] rollDice — roomCode:', window.state.roomCode, '→ POST /api/free/roll');
   try {
-    await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode });
-    window.showToast('🎲 Lancé en cours...');
+    const res = await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode });
+    const results = res.results;
+    const board = window.dom.board;
+    const diceArea = document.createElement('div');
+    diceArea.className = 'player-area dice-area';
+    diceArea.style.borderColor = 'var(--green)';
+    const dh = document.createElement('div');
+    dh.className = 'p-header';
+    const dl = document.createElement('span');
+    dl.className = 'p-name';
+    dl.textContent = '🎲 Dés';
+    dh.appendChild(dl);
+    diceArea.appendChild(dh);
+    const diceRow = document.createElement('div');
+    diceRow.className = 'cards-row dice-row';
+    for (const val of results) {
+      diceRow.appendChild(window.createDiceElement(val, true));
+    }
+    diceArea.appendChild(diceRow);
+    board.appendChild(diceArea);
+    window.startDiceRolling(results);
+    window.showToast('🎲 Lancé !');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }
 };
