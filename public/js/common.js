@@ -23,7 +23,8 @@ function initDom() {
     'game-code-badge','phase-badge','game-type-badge','board','game-status',
     'dice-count-display',
     'controls','btn-fullscreen','btn-anonyme','result-overlay','winner-text',
-    'result-scores','btn-replay','btn-back-lobby','toast'];
+    'result-scores','btn-replay','btn-back-lobby','toast',
+    'btn-hit','btn-stand','btn-double'];
   ids.forEach(id => window.dom[id] = window.$(id));
 }
 
@@ -129,6 +130,7 @@ window.showLobby = function() {
   window.state.phase = 'lobby';
   window.state.roomCode = null;
   window.state.playerId = null;
+  window._currentGameMode = null;
   window.stopPolling();
   window.showScreen('screen-lobby');
   window.dom['result-overlay'].classList.remove('show');
@@ -156,10 +158,14 @@ window.showGame = function() {
 
 // --- Bascule de mode de jeu (appelé au passage en phase playing)
 window.switchGameMode = function(gameType) {
-  if (gameType === 'free' && window.freeInit) {
+  if (window._currentGameMode === gameType) return;
+  window._currentGameMode = gameType;
+
+  if (gameType === 'blackjack' && window.blackjackInit) {
+    window.blackjackInit();
+  } else if (gameType === 'free' && window.freeInit) {
     window.freeInit();
-  }
-  if (gameType === 'bizkit' && window.bizkitInit) {
+  } else if (gameType === 'bizkit' && window.bizkitInit) {
     window.bizkitInit();
   }
 };

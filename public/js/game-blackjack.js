@@ -136,21 +136,22 @@ window.renderResult = function(gs) {
   }
 };
 
-// --- Contrôles Blackjack
-window.dom['btn-hit'].addEventListener('click', async () => {
-  if (!window.state.roomCode || !window.state.playerId) return;
-  try { await window.api('POST', '/api/hit', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
-  catch (e) { window.showToast('Erreur : ' + e.message); }
-});
+window.blackjackInit = function() {
+  window.dom['btn-hit'].addEventListener('click', async () => {
+    if (!window.state.roomCode || !window.state.playerId) return;
+    try { await window.api('POST', '/api/hit', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
+    catch (e) { window.showToast('Erreur : ' + e.message); }
+  });
 
-window.dom['btn-stand'].addEventListener('click', async () => {
-  if (!window.state.roomCode || !window.state.playerId) return;
-  try { await window.api('POST', '/api/stand', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
-  catch (e) { window.showToast('Erreur : ' + e.message); }
-});
+  window.dom['btn-stand'].addEventListener('click', async () => {
+    if (!window.state.roomCode || !window.state.playerId) return;
+    try { await window.api('POST', '/api/stand', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
+    catch (e) { window.showToast('Erreur : ' + e.message); }
+  });
 
-window.dom['btn-double'].addEventListener('click', async () => {
-  if (!window.state.roomCode || !window.state.playerId) return;
-  try { await window.api('POST', '/api/double', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
-  catch (e) { window.showToast('Erreur : ' + e.message); }
-});
+  window.dom['btn-double'].addEventListener('click', async () => {
+    if (!window.state.roomCode || !window.state.playerId) return;
+    try { await window.api('POST', '/api/double', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
+    catch (e) { window.showToast('Erreur : ' + e.message); }
+  });
+};

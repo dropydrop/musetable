@@ -16,12 +16,6 @@ const bizkit = require('./handlers/bizkit.js');
 
 const games = {};
 
-// --- Helper de dispatch vers les handlers de jeu
-const gameHandlers = {
-  blackjack,
-  free
-};
-
 function getRoom(path, body, url, games) {
   if (path === '/api/game-state') return games[url.searchParams.get('room')];
   return body.roomCode ? games[body.roomCode] : null;
@@ -171,16 +165,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // --- Routes libres (hors dispatch gameType) ---
-    if (path === '/api/free/roll' && req.method === 'POST') {
-      free.roll(room, body, res);
-      return;
-    }
-    if (path === '/api/free/set-dice' && req.method === 'POST') {
-      free.setDiceCount(room, body, res);
-      return;
-    }
-
     // --- Routes spécifiques au Blackjack ---
     if (room.gameType === 'blackjack') {
       if (path === '/api/start-game' && req.method === 'POST') {
@@ -226,6 +210,12 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/free/reset' && req.method === 'POST') {
         await free.reset(room, body, res, games); return;
+      }
+      if (path === '/api/free/roll' && req.method === 'POST') {
+        await free.roll(room, body, res); return;
+      }
+      if (path === '/api/free/set-dice' && req.method === 'POST') {
+        await free.setDiceCount(room, body, res); return;
       }
     }
 
