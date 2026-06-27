@@ -84,9 +84,15 @@ window.freeRenderer = function(gs) {
     dh.className = 'p-header';
     const dl = document.createElement('span');
     dl.className = 'p-name';
-    dl.textContent = '🎲 Dés : ' + gs.lastDice.results.join(' · ');
+    dl.textContent = '🎲 Dés';
     dh.appendChild(dl);
     diceArea.appendChild(dh);
+    const diceRow = document.createElement('div');
+    diceRow.className = 'cards-row';
+    for (const val of gs.lastDice.results) {
+      diceRow.appendChild(window.createDiceElement(val));
+    }
+    diceArea.appendChild(diceRow);
     board.appendChild(diceArea);
   }
 

@@ -15,9 +15,15 @@ window.bizkitRenderer = function(gs) {
     const dl = document.createElement('span');
     dl.className = 'p-name';
     const playerName = gs.players[gs.lastDice.playerId]?.name || '?';
-    dl.textContent = '🎲 ' + playerName + ' : ' + gs.lastDice.results.join(' · ');
+    dl.textContent = '🎲 ' + playerName;
     dh.appendChild(dl);
     diceArea.appendChild(dh);
+    const diceRow = document.createElement('div');
+    diceRow.className = 'cards-row';
+    for (const val of gs.lastDice.results) {
+      diceRow.appendChild(window.createDiceElement(val));
+    }
+    diceArea.appendChild(diceRow);
     board.appendChild(diceArea);
   }
 

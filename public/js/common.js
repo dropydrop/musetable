@@ -81,6 +81,37 @@ window.createCardElement = function(card, faceUp) {
   return div;
 };
 
+window.createDiceElement = function(value) {
+  // Positions des points pour chaque valeur (grille 3x3)
+  const positions = {
+    1: [[1,1]],
+    2: [[0,0],[2,2]],
+    3: [[0,0],[1,1],[2,2]],
+    4: [[0,0],[0,2],[2,0],[2,2]],
+    5: [[0,0],[0,2],[1,1],[2,0],[2,2]],
+    6: [[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]]
+  };
+  const dice = document.createElement('div');
+  dice.className = 'dice';
+  const grid = document.createElement('div');
+  grid.className = 'dice-grid';
+  const dots = positions[value] || [];
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const cell = document.createElement('div');
+      cell.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center';
+      if (dots.some(([r,c]) => r === row && c === col)) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        cell.appendChild(dot);
+      }
+      grid.appendChild(cell);
+    }
+  }
+  dice.appendChild(grid);
+  return dice;
+};
+
 window.showToast = function(msg, duration) {
   const el = window.dom.toast;
   el.textContent = msg;
