@@ -23,8 +23,7 @@ function initDom() {
     'game-code-badge','phase-badge','game-type-badge','board','game-status',
     'dice-count-display',
     'controls','btn-fullscreen','btn-anonyme','result-overlay','winner-text',
-    'result-scores','btn-replay','btn-back-lobby','toast',
-    'btn-hit','btn-stand','btn-double'];
+    'result-scores','btn-replay','btn-back-lobby','toast'];
   ids.forEach(id => window.dom[id] = window.$(id));
 }
 

@@ -142,7 +142,22 @@ window.blackjack.renderResult = function(gs) {
   }
 };
 
-window.blackjack.init = function() {
+function setBlackjackControls() {
+  window.dom.controls.innerHTML = '';
+  const spec = [
+    { id:'btn-hit', text:'HIT', cls:'btn-green' },
+    { id:'btn-double', text:'DOUBLER', cls:'btn-gold' },
+    { id:'btn-stand', text:'STAND', cls:'btn-red' }
+  ];
+  spec.forEach(b => {
+    const btn = document.createElement('button');
+    btn.id = b.id;
+    btn.className = b.cls;
+    btn.textContent = b.text;
+    window.dom[b.id] = btn;
+    window.dom.controls.appendChild(btn);
+  });
+
   window.dom['btn-hit'].addEventListener('click', async () => {
     if (!window.state.roomCode || !window.state.playerId) return;
     try { await window.api('POST', '/api/hit', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
@@ -160,4 +175,8 @@ window.blackjack.init = function() {
     try { await window.api('POST', '/api/double', { roomCode: window.state.roomCode, playerId: window.state.playerId }); }
     catch (e) { window.showToast('Erreur : ' + e.message); }
   });
+}
+
+window.blackjack.init = function() {
+  setBlackjackControls();
 };
