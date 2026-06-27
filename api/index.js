@@ -121,34 +121,43 @@ module.exports = async (req, res) => {
 
     // GET /api/game-state
     if (path === '/api/game-state' && req.method === 'GET') {
-      const publicState = {
-        roomCode: url.searchParams.get('room'),
-        phase: room.phase,
-        gameType: room.gameType,
-        currentTurn: room.currentTurn,
-        winners: room.winners,
-        result: room.result,
-        cardsRemaining: room.deck.length,
-        table: room.table || [],
-        lastDice: room.lastDice || null,
-        diceCount: room.diceCount || 1,
-        miseParDefaut: room.miseParDefaut || null,
-        players: {}
-      };
-      for (const [id, p] of Object.entries(room.players)) {
-        publicState.players[id] = {
-          name: p.name,
-          hand: p.hand,
-          score: p.score,
-          isActive: room.gameType === 'free' ? true : p.isActive,
-          stand: room.gameType === 'free' ? false : p.stand,
-          solde: p.solde,
-          mise: p.mise,
-          resultat: p.resultat,
-          gain: p.gain
+      let gs;
+      if (room.gameType === 'pyramide') {
+        const { getPublicState } = require('./game-logic/pyramide.js');
+        gs = getPublicState(room);
+      } else if (room.gameType === 'tarot') {
+        const { getPublicState } = require('./game-logic/tarot.js');
+        gs = getPublicState(room);
+      } else {
+        gs = {
+          roomCode: url.searchParams.get('room'),
+          phase: room.phase,
+          gameType: room.gameType,
+          currentTurn: room.currentTurn,
+          winners: room.winners,
+          result: room.result,
+          cardsRemaining: room.deck.length,
+          table: room.table || [],
+          lastDice: room.lastDice || null,
+          diceCount: room.diceCount || 1,
+          miseParDefaut: room.miseParDefaut || null,
+          players: {}
         };
+        for (const [id, p] of Object.entries(room.players)) {
+          gs.players[id] = {
+            name: p.name,
+            hand: p.hand,
+            score: p.score,
+            isActive: room.gameType === 'free' ? true : p.isActive,
+            stand: room.gameType === 'free' ? false : p.stand,
+            solde: p.solde,
+            mise: p.mise,
+            resultat: p.resultat,
+            gain: p.gain
+          };
+        }
       }
-      res.status(200).json({ success: true, gameState: publicState });
+      res.status(200).json({ success: true, gameState: gs });
       return;
     }
 

@@ -38,49 +38,50 @@ function startGame(room) {
   room.deck = deck;
   room.playerOrder = ids.slice();
   room.activePlayerIndex = 0;
-  room.pyramide = buildPyramide(deck);
-  room.indexActif = 0;
-  room.pyramide[0].faceUp = true;
 
   room.phase = 'distribution';
-  room.tourDistribution = 0;
-  room.indexDistribution = 0;
+  room.tourDistribution = 1;
+  room.joueurDistributionIndex = 0;
 
   for (const id of ids) {
     room.players[id].hand = [];
     room.players[id].score = 0;
   }
 
-  // 1 carte au premier joueur
-  room.players[ids[0]].hand.push(deck.pop());
-  room.indexDistribution = 1;
-
-  return { success: true, phase: 'distribution', tourDistribution: 0 };
+  return { success: true };
 }
 
-function distribuerSuivant(room) {
-  const ids = room.playerOrder;
-  const idx = room.indexDistribution;
+function distribuerCarte(room) {
+  const joueurs = Object.keys(room.players);
 
-  if (idx >= ids.length) {
-    // Tour terminé
+  if (room.phase !== 'distribution') return { success: false, error: 'Pas en phase distribution' };
+  if (room.joueurDistributionIndex >= joueurs.length) return { success: false, error: 'Tour terminé, veuillez continuer' };
+
+  const idx = room.joueurDistributionIndex;
+  room.players[joueurs[idx]].hand.push(room.deck.pop());
+  room.joueurDistributionIndex++;
+
+  // Vérifier fin de tour
+  if (room.joueurDistributionIndex >= joueurs.length) {
     room.tourDistribution++;
-    room.indexDistribution = 0;
-    if (room.tourDistribution >= 4) {
-      return { success: true, phase: 'distribution', complete: true, tourDistribution: 4 };
+    room.joueurDistributionIndex = 0;
+
+    // Vérifier si tous les joueurs ont 4 cartes
+    if (room.players[joueurs[0]].hand.length >= 4) {
+      room.phase = 'memorisation';
+      return { success: true, fini: true };
     }
-    return { success: true, phase: 'distribution', tourDistribution: room.tourDistribution };
   }
 
-  // Distribuer 1 carte au joueur courant
-  room.players[ids[idx]].hand.push(room.deck.pop());
-  room.indexDistribution = idx + 1;
-  return { success: true, phase: 'distribution', tourDistribution: room.tourDistribution };
+  return { success: true, fini: false };
 }
 
 function memoriser(room) {
-  room.phase = 'jeu';
+  // Construire la pyramide avec le reste du deck
+  room.pyramide = buildPyramide(room.deck);
+  room.indexActif = 0;
   room.pyramide[0].faceUp = true;
+  room.phase = 'jeu';
   return { success: true, phase: 'jeu' };
 }
 
@@ -144,14 +145,12 @@ function getPublicState(room) {
   const lignes = (room.pyramide || []).map((_, i) => getLigne(i));
   const multiplicateurs = (room.pyramide || []).map((_, i) => getMultiplicateur(getLigne(i)));
 
-  const idxDist = room.indexDistribution;
   const ids = room.playerOrder || [];
   let joueurDist = null;
   if (room.phase === 'distribution') {
-    if (idxDist < ids.length) {
-      joueurDist = room.players[ids[idxDist]] ? room.players[ids[idxDist]].name : null;
-    } else {
-      joueurDist = ids.length > 0 && room.players[ids[0]] ? room.players[ids[0]].name : null;
+    const idx = room.joueurDistributionIndex;
+    if (idx < ids.length) {
+      joueurDist = room.players[ids[idx]] ? room.players[ids[idx]].name : null;
     }
   }
 
@@ -163,7 +162,7 @@ function getPublicState(room) {
     indexActif: room.indexActif || 0,
     lignes,
     multiplicateurs,
-    tourDistribution: room.tourDistribution || 0,
+    tourDistribution: room.tourDistribution || 1,
     totalTours: 4,
     joueurDistribution: joueurDist,
     joueurActif: room.playerOrder ? room.playerOrder[room.activePlayerIndex || 0] : null,
@@ -173,6 +172,6 @@ function getPublicState(room) {
 }
 
 module.exports = {
-  startGame, distribuerSuivant, memoriser, flipCard, matchCard, nextCard,
+  startGame, distribuerCarte, memoriser, flipCard, matchCard, nextCard,
   getPublicState, getLigne, getMultiplicateur, getPyramideInfos
 };

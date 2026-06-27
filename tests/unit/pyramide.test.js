@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const {
-  startGame, distribuerSuivant, memoriser, flipCard, matchCard, nextCard,
+  startGame, distribuerCarte, memoriser, flipCard, matchCard, nextCard,
   getPublicState, getLigne, getMultiplicateur, getPyramideInfos
 } = require('../../api/game-logic/pyramide.js');
 
@@ -70,70 +70,49 @@ test('startGame — 6 joueurs acceptés', () => {
   assert.ok(r.success);
 });
 
-test('startGame — phase distribution avec 1 carte au premier joueur', () => {
+test('startGame — phase distribution, aucune carte, ni pyramide', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   const r = startGame(room);
   assert.ok(r.success);
   assert.strictEqual(room.phase, 'distribution');
-  assert.strictEqual(room.players['p0'].hand.length, 1);
+  assert.strictEqual(room.tourDistribution, 1);
+  assert.strictEqual(room.players['p0'].hand.length, 0);
   assert.strictEqual(room.players['p1'].hand.length, 0);
-  assert.strictEqual(room.pyramide.length, 10);
+  assert.strictEqual(room.pyramide.length, 0);
 });
 
-test('startGame — pyramide index 0 face visible', () => {
-  const room = makePyramideRoom(['Alice', 'Bob']);
-  startGame(room);
-  assert.ok(room.pyramide[0].faceUp);
-});
-
-test('distribuerSuivant — distribution séquentielle puis mémorisation', () => {
+test('distribuerCarte — distribution séquentielle puis mémorisation', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
   assert.strictEqual(room.phase, 'distribution');
-  assert.strictEqual(room.players['p0'].hand.length, 1);
-  assert.strictEqual(room.players['p1'].hand.length, 0);
 
-  // 2 joueurs × 4 cartes = 8 distributions + 4 transitions de tour + 1 finale = 13 appels
-  // Tour 1 : distribuer à p1 (déjà : p0 a reçu dans startGame)
-  let r = distribuerSuivant(room);                     // 1 — distrib à p1
-  assert.strictEqual(room.players['p1'].hand.length, 1);
-  r = distribuerSuivant(room);                         // 2 — tour 1→2
-  assert.strictEqual(room.tourDistribution, 1);
+  // 2 joueurs × 4 cartes = 8 distributions
+  for (let i = 0; i < 7; i++) {
+    const r = distribuerCarte(room);
+    assert.ok(r.success);
+    assert.strictEqual(r.fini, false);
+  }
 
-  // Tour 2
-  r = distribuerSuivant(room);                         // 3 — distrib à p0
-  assert.strictEqual(room.players['p0'].hand.length, 2);
-  r = distribuerSuivant(room);                         // 4 — distrib à p1
-  assert.strictEqual(room.players['p1'].hand.length, 2);
-  r = distribuerSuivant(room);                         // 5 — tour 2→3
-  assert.strictEqual(room.tourDistribution, 2);
-
-  // Tour 3
-  r = distribuerSuivant(room);                         // 6 — distrib à p0
-  assert.strictEqual(room.players['p0'].hand.length, 3);
-  r = distribuerSuivant(room);                         // 7 — distrib à p1
-  assert.strictEqual(room.players['p1'].hand.length, 3);
-  r = distribuerSuivant(room);                         // 8 — tour 3→4
-  assert.strictEqual(room.tourDistribution, 3);
-
-  // Tour 4
-  r = distribuerSuivant(room);                         // 9 — distrib à p0
-  assert.strictEqual(room.players['p0'].hand.length, 4);
-  r = distribuerSuivant(room);                         // 10 — distrib à p1
-  assert.strictEqual(room.players['p1'].hand.length, 4);
-  r = distribuerSuivant(room);                         // 11 — complete
-  assert.ok(r.complete);
-  assert.strictEqual(r.tourDistribution, 4);
-
-  // Mémoriser → phase jeu
-  r = memoriser(room);
+  // Après 8 distributions, la phase passe en memorisation
+  const r = distribuerCarte(room);
   assert.ok(r.success);
+  assert.strictEqual(r.fini, true);
+  assert.strictEqual(room.phase, 'memorisation');
+  assert.strictEqual(room.players['p0'].hand.length, 4);
+  assert.strictEqual(room.players['p1'].hand.length, 4);
+
+  // Mémoriser → construit la pyramide, phase = jeu
+  const mem = memoriser(room);
+  assert.ok(mem.success);
   assert.strictEqual(room.phase, 'jeu');
+  assert.strictEqual(room.pyramide.length, 10);
+  assert.ok(room.pyramide[0].faceUp);
 });
 
 test('flipCard — retourne la carte active', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
+  memoriser(room);
   room.indexActif = 1;
   room.pyramide[1].faceUp = false;
   const r = flipCard(room);
@@ -145,7 +124,7 @@ test('flipCard — retourne la carte active', () => {
 test('nextCard — avance dans la pyramide', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
-  room.phase = 'jeu';
+  memoriser(room);
   const r = nextCard(room);
   assert.ok(r.success);
   assert.strictEqual(r.indexActif, 1);
@@ -155,7 +134,7 @@ test('nextCard — avance dans la pyramide', () => {
 test('nextCard — termine quand fin de pyramide', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
-  room.phase = 'jeu';
+  memoriser(room);
   room.indexActif = 9;
   const r = nextCard(room);
   assert.strictEqual(r.phase, 'finished');
@@ -164,7 +143,7 @@ test('nextCard — termine quand fin de pyramide', () => {
 test('matchCard — valeurs correspondantes', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
-  room.phase = 'jeu';
+  memoriser(room);
   room.pyramide[0] = { suit: 'S', value: '7', faceUp: true };
   room.players['p0'].hand = [{ suit: 'H', value: '7' }];
   const r = matchCard(room, 'p0', 0);
@@ -176,7 +155,7 @@ test('matchCard — valeurs correspondantes', () => {
 test('matchCard — valeurs différentes → erreur', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
-  room.phase = 'jeu';
+  memoriser(room);
   room.pyramide[0] = { suit: 'S', value: '7', faceUp: true };
   room.players['p0'].hand = [{ suit: 'H', value: 'K' }];
   const r = matchCard(room, 'p0', 0);
@@ -187,7 +166,7 @@ test('getPublicState — retourne l\'état', () => {
   const room = makePyramideRoom(['Alice', 'Bob']);
   startGame(room);
   const state = getPublicState(room);
-  assert.ok(state.phase);
-  assert.strictEqual(state.pyramide.length, 10);
-  assert.strictEqual(typeof state.indexActif, 'number');
+  assert.strictEqual(state.phase, 'distribution');
+  assert.strictEqual(state.tourDistribution, 1);
+  assert.strictEqual(typeof state.joueurDistribution, 'string');
 });

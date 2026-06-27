@@ -12,7 +12,7 @@ function getPyramideInfos(index) {
 window.pyramide.renderer = function(gs) {
   if (!gs) return;
 
-  const phaseLabels = { waiting:'En attente', distribution:'Distribution', jeu:'En cours', finished:'Terminée' };
+  const phaseLabels = { waiting:'En attente', distribution:'Distribution', memorisation:'Mémorisation', jeu:'En cours', finished:'Terminée' };
   window.dom['phase-badge'].textContent = phaseLabels[gs.phase] || gs.phase;
   window.dom['game-type-badge'].textContent = '🔺 Pyramide';
   const rt = window.dom['room-game-type'];
@@ -41,6 +41,7 @@ window.pyramide.renderer = function(gs) {
       } else {
         nameSpan.textContent = id === window.state.playerId ? '👤 ' + p.name + ' (moi)' : p.name;
       }
+      nameSpan.textContent += ' (' + p.hand.length + '/4)';
       header.appendChild(nameSpan);
 
       if (gs.phase === 'jeu' || gs.phase === 'finished') {
@@ -55,7 +56,7 @@ window.pyramide.renderer = function(gs) {
       const cardsRow = document.createElement('div');
       cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
       p.hand.forEach((card, i) => {
-        const faceDown = gs.phase === 'jeu' || gs.phase === 'finished' || gs.phase === 'waiting';
+        const faceDown = gs.phase === 'jeu' || gs.phase === 'finished';
         const cardEl = window.createCardElement(card, !faceDown);
         cardEl.style.setProperty('--i', i);
         cardsRow.appendChild(cardEl);
@@ -65,7 +66,7 @@ window.pyramide.renderer = function(gs) {
     }
   }
 
-  // === 2. Phase distribution : info + barre de progression ===
+  // === 2. Phase distribution : info + barre ===
   if (gs.phase === 'distribution') {
     const distBox = document.createElement('div');
     distBox.className = 'player-area';
@@ -73,12 +74,10 @@ window.pyramide.renderer = function(gs) {
 
     const dh = document.createElement('div');
     dh.className = 'p-header';
-    const tourDisplay = Math.min(gs.tourDistribution + 1, 4);
-    dh.textContent = '📦 Distribution — Tour ' + tourDisplay + '/4';
+    dh.textContent = '📦 Distribution — Tour ' + Math.min(gs.tourDistribution || 1, 4) + '/4';
     if (gs.joueurDistribution) dh.textContent += ' — ' + gs.joueurDistribution;
     distBox.appendChild(dh);
 
-    // Barre de progression
     const totalCartes = (gs.playerOrder || []).length * 4;
     const cartesDist = (gs.playerOrder || []).reduce((s, id) => {
       const p = gs.players[id];
@@ -101,7 +100,19 @@ window.pyramide.renderer = function(gs) {
     board.appendChild(distBox);
   }
 
-  // === 3. Pyramide (phase jeu) ===
+  // === 3. Phase mémorisation ===
+  if (gs.phase === 'memorisation') {
+    const memBox = document.createElement('div');
+    memBox.className = 'player-area';
+    memBox.style.borderColor = 'var(--gold)';
+    const mh = document.createElement('div');
+    mh.className = 'p-header';
+    mh.textContent = '🧠 Toutes les cartes sont distribuées ! Cliquez sur "Mémoriser"';
+    memBox.appendChild(mh);
+    board.appendChild(memBox);
+  }
+
+  // === 4. Pyramide (phase jeu) ===
   if (gs.phase === 'jeu' || gs.phase === 'finished') {
     const pBox = document.createElement('div');
     pBox.className = 'player-area';
@@ -128,6 +139,7 @@ window.pyramide.renderer = function(gs) {
       rDiv.style.cssText = 'display:flex;gap:4px;justify-content:center';
       for (const idx of row.indices) {
         const card = gs.pyramide[idx];
+        if (!card) continue;
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'position:relative';
 
@@ -170,10 +182,10 @@ window.pyramide.renderer = function(gs) {
   // === Status ===
   const gsEl = window.dom['game-status'];
   if (gs.phase === 'distribution') {
-    const complete = gs.tourDistribution >= 4;
-    gsEl.textContent = complete
-      ? '🧠 Toutes les cartes sont distribuées ! Mémorisez et cliquez sur "Mémoriser"'
-      : '📦 Distribution des cartes — Tour ' + (Math.min(gs.tourDistribution + 1, 4)) + '/4';
+    gsEl.textContent = '📦 Distribution des cartes — Tour ' + Math.min(gs.tourDistribution || 1, 4) + '/4';
+    gsEl.className = 'game-status';
+  } else if (gs.phase === 'memorisation') {
+    gsEl.textContent = '🧠 Mémorisez vos cartes puis cliquez sur "Mémoriser" !';
     gsEl.className = 'game-status';
   } else if (gs.phase === 'jeu') {
     gsEl.textContent = '🔺 Retournez les cartes de la pyramide !';
@@ -201,6 +213,8 @@ function updatePyramideControls(gs) {
 
   if (gs.phase === 'distribution') {
     setPyramideDistributionControls(gs);
+  } else if (gs.phase === 'memorisation') {
+    setPyramideMemorisationControls(gs);
   } else if (gs.phase === 'jeu') {
     setPyramideGameControls(gs);
   } else if (gs.phase === 'finished') {
@@ -210,29 +224,37 @@ function updatePyramideControls(gs) {
 
 function setPyramideDistributionControls(gs) {
   const controls = window.dom.controls;
-  const complete = gs.tourDistribution >= 4;
-
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center';
 
   const info = document.createElement('div');
   info.style.cssText = 'flex:1;text-align:center;font-weight:700';
-  const tourDisplay = Math.min(gs.tourDistribution + 1, 4);
-  info.textContent = complete
-    ? '🧠 Toutes les cartes sont visibles — Mémorisez !'
-    : '📤 Distribution — Tour ' + tourDisplay + '/4 — ' + (gs.joueurDistribution || '');
+  info.textContent = '📤 Distribution — Tour ' + Math.min(gs.tourDistribution || 1, 4) + '/4 — ' + (gs.joueurDistribution || '');
   row.appendChild(info);
 
   const btn = document.createElement('button');
-  if (complete) {
-    btn.className = 'btn-gold';
-    btn.textContent = '🧠 Mémoriser';
-    btn.addEventListener('click', window.pyramide.memoriser);
-  } else {
-    btn.className = 'btn-green';
-    btn.textContent = '📤 Distribuer';
-    btn.addEventListener('click', window.pyramide.distribuer);
-  }
+  btn.className = 'btn-green';
+  btn.textContent = '📤 Distribuer';
+  btn.addEventListener('click', window.pyramide.distribuer);
+  row.appendChild(btn);
+
+  controls.appendChild(row);
+}
+
+function setPyramideMemorisationControls(gs) {
+  const controls = window.dom.controls;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center';
+
+  const info = document.createElement('div');
+  info.style.cssText = 'flex:1;text-align:center;font-weight:700';
+  info.textContent = '🧠 Toutes les cartes sont visibles — Mémorisez !';
+  row.appendChild(info);
+
+  const btn = document.createElement('button');
+  btn.className = 'btn-gold';
+  btn.textContent = '🧠 Mémoriser (retourner)';
+  btn.addEventListener('click', window.pyramide.memoriser);
   row.appendChild(btn);
 
   controls.appendChild(row);
@@ -240,7 +262,6 @@ function setPyramideDistributionControls(gs) {
 
 function setPyramideGameControls(gs) {
   const controls = window.dom.controls;
-
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center';
 
@@ -268,7 +289,6 @@ function setPyramideGameControls(gs) {
 
 function setPyramideFinishedControls() {
   const controls = window.dom.controls;
-
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
 
@@ -287,24 +307,21 @@ function setPyramideFinishedControls() {
 }
 
 // --- INIT ---
-window.pyramide.init = function() {
-  // Controls are dynamic via updatePyramideControls
-};
+window.pyramide.init = function() {};
 
 // --- ACTIONS API ---
 
 window.pyramide.distribuer = async function() {
   if (!window.state.roomCode) return;
   try {
-    const res = await window.api('POST', '/api/pyramide/distribuer', { roomCode: window.state.roomCode });
-    window.showToast('Carte distribuée');
+    await window.api('POST', '/api/pyramide/distribuer', { roomCode: window.state.roomCode });
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 
 window.pyramide.memoriser = async function() {
   if (!window.state.roomCode) return;
   try {
-    const res = await window.api('POST', '/api/pyramide/memoriser', { roomCode: window.state.roomCode });
+    await window.api('POST', '/api/pyramide/memoriser', { roomCode: window.state.roomCode });
     window.showToast('🧠 Cartes mémorisées !');
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
