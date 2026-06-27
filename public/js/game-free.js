@@ -235,7 +235,7 @@ window.free.rollDice = async function() {
     window._diceRolling.results = results;
     window._diceRolling.active = true;
 
-    // Créer les dés roulants dans le board (feedback immédiat — le prochain poll les remplace)
+    // Créer les dés roulants dans le board
     let diceArea = document.querySelector('.dice-area');
     if (!diceArea) {
       const board = window.dom.board;
@@ -255,12 +255,15 @@ window.free.rollDice = async function() {
     if (oldRow) oldRow.remove();
     const diceRow = document.createElement('div');
     diceRow.className = 'cards-row dice-row';
+    const diceElements = [];
     for (const val of results) {
-      diceRow.appendChild(window.createDiceElement(val, true));
+      const d = window.createDiceElement(val, true);
+      diceRow.appendChild(d);
+      diceElements.push(d);
     }
     diceArea.appendChild(diceRow);
 
-    window.startDiceRolling(results);
+    window.startDiceRolling(diceElements, results);
     window.showToast('🎲 Lancé !');
   }
   catch (e) { window.showToast('Erreur : ' + e.message); }

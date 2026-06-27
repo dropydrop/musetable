@@ -131,38 +131,27 @@ window.updateDiceDots = function(diceEl, value) {
 // --- État de lancer de dés (animation)
 window._diceRolling = { active: false, results: null };
 
-window.startDiceRolling = function(results) {
+window.startDiceRolling = function(diceElements, finalResults) {
   if (window._diceRolling.active) return;
   window._diceRolling.active = true;
-  window._diceRolling.results = results || [];
 
-  if (document.querySelectorAll('.dice.rolling').length === 0) {
-    window._diceRolling.active = false;
-    return;
-  }
-
-  const values = [1,2,3,4,5,6];
+  const values = [1, 2, 3, 4, 5, 6];
   let tick = 0;
 
   const interval = setInterval(() => {
     const val = values[tick % 6];
-    document.querySelectorAll('.dice.rolling').forEach(el => window.updateDiceDots(el, val));
+    diceElements.forEach(el => window.updateDiceDots(el, val));
     tick++;
-  }, 80);
+  }, 100);
 
-  const stop = function() {
+  setTimeout(() => {
     clearInterval(interval);
-    if (window._diceRolling._timeout) clearTimeout(window._diceRolling._timeout);
     window._diceRolling.active = false;
-    const final = window._diceRolling.results || [];
-    document.querySelectorAll('.dice.rolling').forEach((el, i) => {
+    diceElements.forEach((el, i) => {
       el.classList.remove('rolling');
-      if (i < final.length) window.updateDiceDots(el, final[i]);
+      if (i < finalResults.length) window.updateDiceDots(el, finalResults[i]);
     });
-  };
-
-  window._diceRolling._timeout = setTimeout(stop, 2500);
-  return stop;
+  }, 2000);
 };
 
 // --- Détermination de la disposition des cartes

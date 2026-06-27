@@ -131,11 +131,14 @@ window.bizkit.rollDice = async function() {
     if (oldRow) oldRow.remove();
     const diceRow = document.createElement('div');
     diceRow.className = 'cards-row dice-row';
+    const diceElements = [];
     for (const val of results) {
-      diceRow.appendChild(window.createDiceElement(val, true));
+      const d = window.createDiceElement(val, true);
+      diceRow.appendChild(d);
+      diceElements.push(d);
     }
     diceArea.appendChild(diceRow);
-    window.startDiceRolling(results);
+    window.startDiceRolling(diceElements, results);
     const btn = window._bizkitNextBtn;
     if (btn) {
       btn.disabled = false;
