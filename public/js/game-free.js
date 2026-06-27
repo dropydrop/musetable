@@ -139,9 +139,9 @@ window.freeRenderer = function(gs) {
   }
 
   // Synchroniser l'affichage du count de dés
-  const rollBtn = window.dom['btn-free-roll'];
-  if (rollBtn && gs.diceCount) {
-    rollBtn.textContent = '🎲 x' + gs.diceCount;
+  const display = window.dom['dice-count-display'];
+  if (display && gs.diceCount) {
+    display.textContent = '🎲 x' + gs.diceCount;
   }
 
   window.dom['game-status'].textContent = 'Mode libre — manipulez cartes et dés';
@@ -166,32 +166,34 @@ function setFreeControls() {
     window.dom.controls.appendChild(btn);
   });
 
-  // Contrôles dés : ➖ 🎲 xN ➕
+  // Contrôles dés : ➖ 🎲 xN ➕ 🎲 Lancer
   const diceRow = document.createElement('div');
-  diceRow.style.cssText = 'display:flex;gap:6px;align-items:center;width:100%';
+  diceRow.style.cssText = 'display:flex;gap:8px;align-items:center';
 
   const minusBtn = document.createElement('button');
-  minusBtn.className = 'btn-outline';
   minusBtn.textContent = '➖';
-  minusBtn.style.cssText = 'flex:0 0 auto;padding:14px 16px;font-size:1.2rem';
+  minusBtn.className = 'btn-outline';
   minusBtn.addEventListener('click', () => setDiceCount(-1));
 
-  const rollBtn = document.createElement('button');
-  rollBtn.id = 'btn-free-roll';
-  rollBtn.className = 'btn-gold';
-  rollBtn.textContent = '🎲 x2';
-  rollBtn.style.flex = '1';
-  rollBtn.addEventListener('click', rollDice);
+  const countDisplay = document.createElement('span');
+  countDisplay.id = 'dice-count-display';
+  countDisplay.textContent = '🎲 x1';
+  countDisplay.style.cssText = 'font-weight:700;min-width:60px;text-align:center';
 
   const plusBtn = document.createElement('button');
-  plusBtn.className = 'btn-outline';
   plusBtn.textContent = '➕';
-  plusBtn.style.cssText = 'flex:0 0 auto;padding:14px 16px;font-size:1.2rem';
+  plusBtn.className = 'btn-outline';
   plusBtn.addEventListener('click', () => setDiceCount(1));
 
+  const rollBtn = document.createElement('button');
+  rollBtn.textContent = '🎲 Lancer';
+  rollBtn.className = 'btn-gold';
+  rollBtn.addEventListener('click', rollDice);
+
   diceRow.appendChild(minusBtn);
-  diceRow.appendChild(rollBtn);
+  diceRow.appendChild(countDisplay);
   diceRow.appendChild(plusBtn);
+  diceRow.appendChild(rollBtn);
   window.dom.controls.appendChild(diceRow);
 }
 
@@ -223,14 +225,17 @@ async function rollDice() {
 }
 
 async function setDiceCount(delta) {
+  const display = document.getElementById('dice-count-display');
+  const current = parseInt(display.textContent.replace('🎲 x', '')) || 1;
+  const count = current + delta;
+  if (count < 1 || count > 6) return;
   if (!window.state.roomCode) return;
   try {
-    const res = await window.api('POST', '/api/free/set-dice', {
+    await window.api('POST', '/api/free/set-dice', {
       roomCode: window.state.roomCode,
-      delta
+      count
     });
-    const btn = window.dom['btn-free-roll'];
-    if (btn) btn.textContent = '🎲 x' + res.diceCount;
+    display.textContent = '🎲 x' + count;
   } catch (e) {
     window.showToast('Erreur : ' + e.message);
   }

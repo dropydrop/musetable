@@ -97,14 +97,16 @@ function flipHandCard(room, playerId, cardIndex) {
 }
 
 /**
- * Lance X dés (délègue à common)
- * @param {number} count
- * @param {number} [faces=6]
+ * Lance plusieurs dés à 6 faces
+ * @param {number} count — nombre de dés (défaut 1)
  * @returns {{ success: true, results: number[] }}
  */
-function rollDice(count, faces) {
-  const { rollDice: roll } = require('./common.js');
-  const results = roll(count || 1, faces || 6);
+function rollDice(count) {
+  count = count || 1;
+  const results = [];
+  for (let i = 0; i < count; i++) {
+    results.push(Math.floor(Math.random() * 6) + 1);
+  }
   return { success: true, results };
 }
 

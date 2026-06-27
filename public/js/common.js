@@ -21,6 +21,7 @@ function initDom() {
     'room-code-display','room-game-type','waiting-players','btn-start','btn-leave',
     'btn-back-menu','btn-reset-session',
     'game-code-badge','phase-badge','game-type-badge','board','game-status',
+    'dice-count-display',
     'controls','btn-fullscreen','btn-anonyme','result-overlay','winner-text',
     'result-scores','btn-replay','btn-back-lobby','toast'];
   ids.forEach(id => window.dom[id] = window.$(id));

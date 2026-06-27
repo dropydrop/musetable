@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
         result: null,
         table: [],
         lastDice: null,
-        diceCount: 2
+        diceCount: 1
       };
       res.status(200).json({ success: true, roomCode: code });
       return;
@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
         cardsRemaining: room.deck.length,
         table: room.table || [],
         lastDice: room.lastDice || null,
-        diceCount: room.diceCount || 2,
+        diceCount: room.diceCount || 1,
         players: {}
       };
       for (const [id, p] of Object.entries(room.players)) {
@@ -168,6 +168,16 @@ module.exports = async (req, res) => {
         if (room.gameType !== 'free') { p.isActive = true; p.stand = false; }
       }
       res.status(200).json({ success: true });
+      return;
+    }
+
+    // --- Routes libres (hors dispatch gameType) ---
+    if (path === '/api/free/roll' && req.method === 'POST') {
+      free.roll(room, body, res);
+      return;
+    }
+    if (path === '/api/free/set-dice' && req.method === 'POST') {
+      free.setDiceCount(room, body, res);
       return;
     }
 
@@ -205,9 +215,6 @@ module.exports = async (req, res) => {
       if (path === '/api/free/pickup' && req.method === 'POST') {
         await free.pickup(room, body, res, games); return;
       }
-      if (path === '/api/free/roll' && req.method === 'POST') {
-        await free.roll(room, body, res, games); return;
-      }
       if (path === '/api/free/shuffle' && req.method === 'POST') {
         await free.shuffle(room, body, res, games); return;
       }
@@ -219,9 +226,6 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/free/reset' && req.method === 'POST') {
         await free.reset(room, body, res, games); return;
-      }
-      if (path === '/api/free/set-dice' && req.method === 'POST') {
-        await free.setDice(room, body, res, games); return;
       }
     }
 

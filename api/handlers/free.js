@@ -2,7 +2,6 @@
 // Chaque fonction reçoit (room, body, res, games)
 
 const { createShuffledDeck } = require('../../game-logic/common.js');
-const { rollDice: doRoll } = require('../../game-logic/free.js');
 const {
   drawCards,
   playCard,
@@ -41,19 +40,20 @@ async function pickup(room, body, res, games) {
   res.status(200).json(result);
 }
 
-async function roll(room, body, res, games) {
-  const count = room.diceCount || 2;
-  const results = doRoll(count, 6);
-  room.lastDice = { results };
-  res.status(200).json({ success: true, results });
+function roll(room, body, res) {
+  const count = body.count || room.diceCount || 1;
+  const { rollDice } = require('../../game-logic/free.js');
+  const result = rollDice(count);
+  room.lastDice = { results: result.results, count };
+  res.status(200).json({ success: true, results: result.results });
 }
 
-async function setDice(room, body, res, games) {
-  const { delta } = body;
-  const current = room.diceCount || 2;
-  const newCount = Math.max(1, Math.min(6, current + (delta || 0)));
-  room.diceCount = newCount;
-  res.status(200).json({ success: true, diceCount: newCount });
+function setDiceCount(room, body, res) {
+  const count = body.count || 1;
+  if (count < 1) { res.status(400).json({ success: false, error: 'Minimum 1 dé' }); return; }
+  if (count > 6) { res.status(400).json({ success: false, error: 'Maximum 6 dés' }); return; }
+  room.diceCount = count;
+  res.status(200).json({ success: true, diceCount: count });
 }
 
 async function flipHand(room, body, res, games) {
@@ -84,4 +84,4 @@ async function deal(room, body, res, games) {
   res.status(200).json(result);
 }
 
-module.exports = { draw, play, flip, pickup, roll, flipHand, reset, shuffle, deal, setDice };
+module.exports = { draw, play, flip, pickup, roll, flipHand, reset, shuffle, deal, setDiceCount };
