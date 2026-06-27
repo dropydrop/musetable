@@ -209,12 +209,14 @@ module.exports = async (req, res) => {
       if (path === '/api/free/reset' && req.method === 'POST') {
         await free.reset(room, body, res, games); return;
       }
-      if (path === '/api/free/roll' && req.method === 'POST') {
-        await free.roll(room, body, res); return;
-      }
-      if (path === '/api/free/set-dice' && req.method === 'POST') {
-        await free.setDiceCount(room, body, res); return;
-      }
+    }
+
+    // --- Routes Free "universelles" (hors bloc gameType car ne dépendent pas du type de salle) ---
+    if (path === '/api/free/roll' && req.method === 'POST') {
+      free.roll(room, body, res); return;
+    }
+    if (path === '/api/free/set-dice' && req.method === 'POST') {
+      free.setDiceCount(room, body, res); return;
     }
 
     // --- Routes spécifiques au Bizkit ---
