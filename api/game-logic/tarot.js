@@ -186,7 +186,15 @@ function endRound(room) {
 }
 
 function getPublicState(room) {
+  const players = {};
+  if (room.players) {
+    for (const [id, p] of Object.entries(room.players)) {
+      players[id] = { name: p.name };
+    }
+  }
   return {
+    gameType: room.gameType,
+    players,
     vies: room.vies || {},
     cartesDistribuees: room.cartesDistribuees,
     dealerIndex: room.dealerIndex,

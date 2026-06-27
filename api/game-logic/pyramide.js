@@ -154,8 +154,17 @@ function getPublicState(room) {
     }
   }
 
+  const players = {};
+  if (room.players) {
+    for (const [id, p] of Object.entries(room.players)) {
+      players[id] = { name: p.name, hand: p.hand };
+    }
+  }
+
   return {
+    gameType: room.gameType,
     phase: room.phase,
+    players,
     pyramide: (room.pyramide || []).map(c => ({
       suit: c.suit, value: c.value, faceUp: c.faceUp
     })),

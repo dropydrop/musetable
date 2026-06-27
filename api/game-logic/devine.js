@@ -55,7 +55,16 @@ function getPublicState(room) {
   const tempsEcoule = room.timestampDebut ? Math.floor((Date.now() - room.timestampDebut) / 1000) : 0;
   const tempsRestant = Math.max(0, (room.timer || 60) - tempsEcoule);
 
+  const players = {};
+  if (room.players) {
+    for (const [id, p] of Object.entries(room.players)) {
+      players[id] = { name: p.name };
+    }
+  }
+
   return {
+    gameType: room.gameType,
+    players,
     phase: room.phase,
     motCourant: room.indexActuel < (room.mots || []).length ? room.mots[room.indexActuel] : null,
     indexActuel: room.indexActuel,
