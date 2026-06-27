@@ -65,6 +65,23 @@ window.createCardElement = function(card, faceUp) {
     div.innerHTML = '<span style="opacity:0.25;letter-spacing:2px">♠♥♦♣</span>';
     return div;
   }
+  // Excuse (carte 0 du Tarot)
+  if (card.value === '0' || card.suit === 'EXCUSE') {
+    div.style.cssText = 'width:58px;height:82px;border-radius:8px;background:linear-gradient(135deg,#f5f5f5,#e0e0e0);border:2px solid #999;display:flex;align-items:center;justify-content:center';
+    const inner = document.createElement('div');
+    inner.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
+    const icon = document.createElement('span');
+    icon.style.cssText = 'font-size:2.5rem;line-height:1';
+    icon.textContent = '🃏';
+    const label = document.createElement('span');
+    label.style.cssText = 'font-size:0.65rem;font-weight:700;color:#666';
+    label.textContent = 'EXCUSE';
+    inner.appendChild(icon);
+    inner.appendChild(label);
+    div.appendChild(inner);
+    return div;
+  }
+
   const isRed = card.suit === 'H' || card.suit === 'D';
   div.classList.add(isRed ? 'red' : 'black');
   const inner = document.createElement('div');

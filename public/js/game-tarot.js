@@ -85,16 +85,28 @@ window.tarot.renderer = function(gs) {
         const cardsRow = document.createElement('div');
         cardsRow.className = 'cards-row ' + window.getCardLayout(main);
         main.forEach((carte, i) => {
-          const val = carte === 0 ? 'Excuse' : String(carte);
-          const el = document.createElement('div');
-          el.className = 'card';
-          el.textContent = val;
-          el.style.cssText = 'width:48px;height:68px;border-radius:6px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem';
+          const cardObj = carte === 0 ? { value: '0', suit: 'EXCUSE' } : { value: String(carte), suit: 'TAROT' };
+          const el = carte === 0
+            ? window.createCardElement(cardObj, true)
+            : (() => {
+                const e = document.createElement('div');
+                e.className = 'card';
+                e.textContent = String(carte);
+                e.style.cssText = 'width:48px;height:68px;border-radius:6px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem';
+                return e;
+              })();
           el.style.setProperty('--i', i);
           if (gs.phase === 'JEU' && id === window.state.playerId && id === gs.joueurActif) {
             el.style.cursor = 'pointer';
             el.style.border = '2px solid var(--accent)';
-            el.addEventListener('click', () => window.tarot.playCard(i));
+            el.addEventListener('click', () => {
+              if (carte === 0) {
+                window.tarot.excuseCardIndex = i;
+                setTarotExcuseControls(gs);
+              } else {
+                window.tarot.playCard(i);
+              }
+            });
           }
           cardsRow.appendChild(el);
         });
@@ -116,15 +128,28 @@ window.tarot.renderer = function(gs) {
     pliBox.appendChild(plh);
     const row = document.createElement('div');
     row.className = 'cards-row';
-    for (const p of gs.pliActuel) {
-      const cardEl = document.createElement('div');
-      cardEl.className = 'card';
-      const v = p.carte === 0 ? 'Excuse' : String(p.carte);
-      const ev = p.excuseValue !== null ? ' (' + p.excuseValue + ')' : '';
-      const pname = gs.players?.[p.playerId]?.name || p.playerId;
-      cardEl.innerHTML = v + ev + '<br><span style="font-size:.65rem;color:var(--muted)">' + pname + '</span>';
-      cardEl.style.cssText = 'width:64px;height:89px;border-radius:8px;background:#fff;color:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:.9rem';
-      row.appendChild(cardEl);
+    for (const coup of gs.pliActuel) {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
+      const cardObj = coup.carte === 0
+        ? { value: '0', suit: 'EXCUSE' }
+        : { value: String(coup.carte), suit: 'TAROT' };
+      let cardEl;
+      if (coup.carte === 0) {
+        cardEl = window.createCardElement(cardObj, true);
+      } else {
+        cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        const ev = coup.excuseValue !== null && coup.excuseValue !== undefined ? ' (' + coup.excuseValue + ')' : '';
+        cardEl.innerHTML = String(coup.carte) + (ev || '');
+        cardEl.style.cssText = 'width:64px;height:89px;border-radius:8px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem';
+      }
+      wrapper.appendChild(cardEl);
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:0.7rem;color:var(--muted);text-align:center';
+      label.textContent = gs.players?.[coup.playerId]?.name || coup.playerId;
+      wrapper.appendChild(label);
+      row.appendChild(wrapper);
     }
     pliBox.appendChild(row);
     board.appendChild(pliBox);
@@ -221,6 +246,12 @@ function setTarotGameControls(gs) {
   const controls = window.dom.controls;
   controls.innerHTML = '';
 
+  // Si un choix de valeur Excuse est en attente
+  if (window.tarot.excuseCardIndex !== null && window.tarot.excuseCardIndex !== undefined) {
+    setTarotExcuseControls(gs);
+    return;
+  }
+
   const isMyTurn = gs.joueurActif === window.state.playerId;
 
   const row = document.createElement('div');
@@ -233,14 +264,38 @@ function setTarotGameControls(gs) {
     row.appendChild(label);
   }
 
-  // Bouton résoudre pli (quand toutes les cartes sont jouées)
-  if (gs.pliActuel && gs.pliActuel.length > 0) {
-    const resolveBtn = document.createElement('button');
-    resolveBtn.className = 'btn-gold';
-    resolveBtn.textContent = '🏆 Résoudre le pli';
-    resolveBtn.addEventListener('click', window.tarot.resolveTrick);
-    row.appendChild(resolveBtn);
-  }
+  controls.appendChild(row);
+}
+
+function setTarotExcuseControls(gs) {
+  const controls = window.dom.controls;
+  controls.innerHTML = '';
+
+  const info = document.createElement('div');
+  info.style.cssText = 'flex:1;text-align:center;font-weight:700;margin-bottom:8px';
+  info.textContent = '🃏 Vous jouez l\'Excuse — Choisissez sa valeur';
+  controls.appendChild(info);
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
+
+  const btn0 = document.createElement('button');
+  btn0.className = 'btn-outline';
+  btn0.textContent = '0 (plus petite)';
+  btn0.addEventListener('click', () => {
+    window.tarot.playCard(window.tarot.excuseCardIndex, 0);
+    window.tarot.excuseCardIndex = null;
+  });
+  row.appendChild(btn0);
+
+  const btn22 = document.createElement('button');
+  btn22.className = 'btn-gold';
+  btn22.textContent = '22 (plus forte)';
+  btn22.addEventListener('click', () => {
+    window.tarot.playCard(window.tarot.excuseCardIndex, 22);
+    window.tarot.excuseCardIndex = null;
+  });
+  row.appendChild(btn22);
 
   controls.appendChild(row);
 }
@@ -301,13 +356,15 @@ window.tarot.placeBid = async function(nb) {
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 
-window.tarot.playCard = async function(cardIndex) {
+window.tarot.playCard = async function(cardIndex, excuseValue) {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {
     const res = await window.api('POST', '/api/tarot/play', {
-      roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex
+      roomCode: window.state.roomCode, playerId: window.state.playerId, cardIndex,
+      excuseValue: excuseValue !== undefined ? excuseValue : undefined
     });
-    window.showToast('Carte jouée');
+    const msg = res.gagnantPli ? '🏆 Pli remporté !' : 'Carte jouée';
+    window.showToast(msg);
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 

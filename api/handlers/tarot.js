@@ -22,7 +22,7 @@ async function play(room, body, res, games) {
   const { playerId, cardIndex, excuseValue } = body;
   const r = jouerCarte(room, playerId, cardIndex, excuseValue);
   if (!r.success) { res.status(400).json(r); return; }
-  res.status(200).json({ success: true, gameState: getPublicState(room) });
+  res.status(200).json({ success: true, phase: r.phase || 'JEU', gagnantPli: r.gagnant || null, gameState: getPublicState(room) });
 }
 
 async function nextTrick(room, body, res, games) {

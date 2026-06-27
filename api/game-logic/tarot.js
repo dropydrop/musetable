@@ -129,7 +129,32 @@ function jouerCarte(room, playerId, cardIndex, excuseValue) {
 
   room.tourIndex++;
 
+  // Résolution automatique quand tous les joueurs ont joué
+  const joueurs = room.joueurs || Object.keys(room.players);
+  if (pli.length >= joueurs.length) {
+    return resoudrePli(room);
+  }
+
   return { success: true, carte, pli: room.pliActuel, prochain: joueurActuelJeu(room) };
+}
+
+function resoudrePli(room) {
+  const resolution = resolveTrick(room);
+  if (!resolution.success) return resolution;
+
+  const joueurs = room.joueurs || Object.keys(room.players);
+  const cartesRestantes = joueurs.some(id => (room.mains[id] || []).length > 0);
+
+  if (!cartesRestantes) {
+    room.phase = 'SCORE';
+    return { success: true, phase: 'SCORE', gagnant: resolution.gagnant, gagneAvec: resolution.gagneAvec };
+  }
+
+  // Le gagnant du pli commence le prochain tour
+  const winnerIndex = joueurs.indexOf(resolution.gagnant);
+  if (winnerIndex !== -1) room.tourIndex = winnerIndex;
+
+  return { success: true, phase: 'JEU', gagnant: resolution.gagnant, gagneAvec: resolution.gagneAvec, nouveauTour: true };
 }
 
 function resolveTrick(room) {
