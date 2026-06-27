@@ -144,6 +144,11 @@ window.showRoom = function(roomCode) {
 };
 
 window.showGame = function() {
+  if (!window.state.roomCode) {
+    console.warn('[MuseTable] showGame appelé sans roomCode');
+    window.showLobby();
+    return;
+  }
   window.state.phase = 'playing';
   window.showScreen('screen-game');
   window.dom['screen-game'].classList.remove('spectator');

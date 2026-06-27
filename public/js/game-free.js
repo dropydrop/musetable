@@ -216,7 +216,10 @@ async function dealCards() {
 }
 
 async function rollDice() {
-  if (!window.state.roomCode) return;
+  if (!window.state.roomCode) {
+    window.showToast('Erreur : roomCode non défini');
+    return;
+  }
   try {
     await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode });
     window.showToast('🎲 Lancé en cours...');
@@ -229,7 +232,7 @@ async function setDiceCount(delta) {
   const current = parseInt(display.textContent.replace('🎲 x', '')) || 1;
   const count = current + delta;
   if (count < 1 || count > 6) return;
-  if (!window.state.roomCode) return;
+  if (!window.state.roomCode) { window.showToast('Erreur : roomCode non défini'); return; }
   try {
     await window.api('POST', '/api/free/set-dice', {
       roomCode: window.state.roomCode,
