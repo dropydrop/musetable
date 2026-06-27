@@ -139,8 +139,8 @@ test('nextTurn — dernier joueur déclenche checkGameFinished', () => {
     turnIndex: 1,
     currentTurn: 'b',
     players: {
-      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: false, stand: true },
-      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '9' }], score: 20, isActive: false, stand: true }
+      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: false, stand: true, solde: 100, mise: 10 },
+      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '9' }], score: 20, isActive: false, stand: true, solde: 100, mise: 10 }
     },
     phase: 'playing',
     winners: null,
@@ -152,6 +152,9 @@ test('nextTurn — dernier joueur déclenche checkGameFinished', () => {
   assert.strictEqual(room.currentTurn, null);
   assert.strictEqual(room.phase, 'finished');
   assert.ok(room.winners.length > 0);
+  // Push : pas de mouvement de solde
+  assert.strictEqual(room.players.a.solde, 100);
+  assert.strictEqual(room.players.b.solde, 100);
 });
 
 // --- checkGameFinished ---
@@ -159,8 +162,8 @@ test('nextTurn — dernier joueur déclenche checkGameFinished', () => {
 test('checkGameFinished — meilleur score gagne', () => {
   const room = {
     players: {
-      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: false, stand: true },
-      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '8' }], score: 19, isActive: false, stand: true }
+      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: false, stand: true, solde: 100, mise: 10 },
+      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '8' }], score: 19, isActive: false, stand: true, solde: 100, mise: 10 }
     },
     phase: 'playing',
     winners: null,
@@ -171,13 +174,15 @@ test('checkGameFinished — meilleur score gagne', () => {
   assert.strictEqual(room.phase, 'finished');
   assert.deepStrictEqual(room.winners, ['Alice']);
   assert.strictEqual(room.result, 20);
+  assert.strictEqual(room.players.a.solde, 110); // +10
+  assert.strictEqual(room.players.b.solde, 90);  // -10
 });
 
-test('checkGameFinished — égalité entre deux joueurs', () => {
+test('checkGameFinished — égalité entre deux joueurs (push)', () => {
   const room = {
     players: {
-      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: false, stand: true },
-      b: { name: 'Bob', hand: [{ suit: 'D', value: 'K' }, { suit: 'C', value: 'Q' }], score: 20, isActive: false, stand: true }
+      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: false, stand: true, solde: 100, mise: 10 },
+      b: { name: 'Bob', hand: [{ suit: 'D', value: 'K' }, { suit: 'C', value: 'Q' }], score: 20, isActive: false, stand: true, solde: 100, mise: 10 }
     },
     phase: 'playing',
     winners: null,
@@ -189,13 +194,16 @@ test('checkGameFinished — égalité entre deux joueurs', () => {
   assert.ok(room.winners.includes('Alice'));
   assert.ok(room.winners.includes('Bob'));
   assert.strictEqual(room.result, 20);
+  // Push : pas de mouvement de solde
+  assert.strictEqual(room.players.a.solde, 100);
+  assert.strictEqual(room.players.b.solde, 100);
 });
 
-test('checkGameFinished — tous bust = personne ne gagne', () => {
+test('checkGameFinished — tous bust = personne ne gagne, pas de perte', () => {
   const room = {
     players: {
-      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }, { suit: 'D', value: '5' }], score: 25, isActive: false, stand: true },
-      b: { name: 'Bob', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }, { suit: 'D', value: '6' }], score: 26, isActive: false, stand: true }
+      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }, { suit: 'D', value: '5' }], score: 25, isActive: false, stand: true, solde: 100, mise: 10 },
+      b: { name: 'Bob', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }, { suit: 'D', value: '6' }], score: 26, isActive: false, stand: true, solde: 100, mise: 10 }
     },
     phase: 'playing',
     winners: null,
@@ -206,13 +214,16 @@ test('checkGameFinished — tous bust = personne ne gagne', () => {
   assert.strictEqual(room.phase, 'finished');
   assert.strictEqual(room.winners[0], 'Personne (tous ont dépassé 21)');
   assert.strictEqual(room.result, 0);
+  // Pas de perte quand tout le monde bust
+  assert.strictEqual(room.players.a.solde, 100);
+  assert.strictEqual(room.players.b.solde, 100);
 });
 
 test('checkGameFinished — joueurs encore actifs = pas fini', () => {
   const room = {
     players: {
-      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: true, stand: false },
-      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '8' }], score: 19, isActive: false, stand: true }
+      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }], score: 20, isActive: true, stand: false, solde: 100, mise: 10 },
+      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '8' }], score: 19, isActive: false, stand: true, solde: 100, mise: 10 }
     },
     phase: 'playing',
     winners: null,
@@ -220,7 +231,6 @@ test('checkGameFinished — joueurs encore actifs = pas fini', () => {
   };
 
   checkGameFinished(room);
-  // Pas de changement car Alice est encore active
   assert.strictEqual(room.phase, 'playing');
   assert.strictEqual(room.winners, null);
 });
@@ -239,6 +249,32 @@ test('checkGameFinished — aucun joueur = pas de changement', () => {
 });
 
 // --- Cas limites Blackjack ---
+
+test('nextTurn — auto-stand du joueur suivant si le précédent a bust', () => {
+  const room = {
+    playerOrder: ['a', 'b'],
+    turnIndex: 0,
+    currentTurn: 'a',
+    players: {
+      a: { name: 'Alice', hand: [{ suit: 'S', value: 'K' }, { suit: 'H', value: 'Q' }, { suit: 'D', value: '5' }], score: 25, isActive: false, stand: true, solde: 100, mise: 10 },
+      b: { name: 'Bob', hand: [{ suit: 'S', value: 'A' }, { suit: 'H', value: '8' }], score: 19, isActive: true, stand: false, solde: 100, mise: 10 }
+    },
+    phase: 'playing',
+    winners: null,
+    result: null,
+    miseParDefaut: 10
+  };
+
+  nextTurn(room);
+  // Bob auto-stand car Alice a bust
+  assert.strictEqual(room.players.b.stand, true);
+  assert.strictEqual(room.players.b.isActive, false);
+  // Partie finie car tout le monde est done
+  assert.strictEqual(room.phase, 'finished');
+  assert.deepStrictEqual(room.winners, ['Bob']);
+  assert.strictEqual(room.players.b.solde, 110); // Bob gagne
+  assert.strictEqual(room.players.a.solde, 90);  // Alice perd
+});
 
 test('calculateScore — As + As + As + As = 14 (1+1+1+11)', () => {
   const hand = [

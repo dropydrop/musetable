@@ -70,11 +70,27 @@ window.blackjack.renderer = function(gs) {
       area.appendChild(cardsRow);
     }
 
-    if (gs.phase === 'finished' && gs.winners && gs.winners.includes(p.name)) {
-      const winBadge = document.createElement('div');
-      winBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--gold);font-size:.9rem';
-      winBadge.textContent = '🏆 Gagnant ! +' + (p.mise || 0);
-      area.appendChild(winBadge);
+    if (gs.phase === 'finished') {
+      const isWinner = gs.winners && gs.winners.includes(p.name);
+      const isBust = p.score > 21;
+      const isPush = gs.winners && gs.winners.length > 1 && gs.winners[0] !== 'Personne (tous ont dépassé 21)' && isWinner;
+
+      if (isWinner && !isPush) {
+        const winBadge = document.createElement('div');
+        winBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--gold);font-size:.9rem';
+        winBadge.textContent = '🏆 Gagnant ! +' + (p.mise || 0);
+        area.appendChild(winBadge);
+      } else if (!isWinner && !isBust && !isPush && gs.winners && gs.winners[0] !== 'Personne (tous ont dépassé 21)') {
+        const loseBadge = document.createElement('div');
+        loseBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--red);font-size:.9rem';
+        loseBadge.textContent = '💥 Perdant -' + (p.mise || 0);
+        area.appendChild(loseBadge);
+      } else if (isBust && gs.winners && gs.winners[0] !== 'Personne (tous ont dépassé 21)') {
+        const bustBadge = document.createElement('div');
+        bustBadge.style.cssText = 'margin-top:6px;font-weight:700;color:var(--red);font-size:.9rem';
+        bustBadge.textContent = '💥 Dépassé -' + (p.mise || 0);
+        area.appendChild(bustBadge);
+      }
     }
 
     board.appendChild(area);
@@ -93,8 +109,9 @@ window.blackjack.renderer = function(gs) {
     updateBlackjackControls(gs);
   } else if (gs.phase === 'finished') {
     gsEl.className = 'game-status winner';
-    const winners = gs.winners ? gs.winners.join(', ') : '?';
-    gsEl.textContent = '🏆 ' + winners + ' — Manche terminée';
+    const w = gs.winners ? gs.winners.join(', ') : '?';
+    const isPush = gs.winners && gs.winners.length > 1 && gs.winners[0] !== 'Personne (tous ont dépassé 21)';
+    gsEl.textContent = isPush ? '🤝 ' + w + ' — Égalité (push), pas de perte' : '🏆 ' + w + ' — Manche terminée';
     updateBlackjackControls(gs);
   } else if (gs.phase === 'waiting') {
     gsEl.className = 'game-status waiting';

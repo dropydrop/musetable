@@ -11,6 +11,7 @@ const {
 
 /**
  * POST /api/start-game — distribue 2 cartes à chaque joueur
+ * Vérifie blackjack naturel (21 en 2 cartes) → fin instantanée
  */
 async function startGame(room, body, res, games) {
   if (Object.keys(room.players).length === 0) { res.status(400).json({ success: false, error: 'Aucun joueur' }); return; }
@@ -31,11 +32,41 @@ async function startGame(room, body, res, games) {
   room.turnIndex = 0;
   room.currentTurn = room.playerOrder[0];
   room.winners = null;
+
+  // Vérifier blackjack naturel (21 en 2 cartes)
+  const bjPlayers = Object.entries(room.players)
+    .filter(([, p]) => p.score === 21 && p.hand.length === 2)
+    .map(([, p]) => p.name);
+
+  if (bjPlayers.length >= 1) {
+    room.phase = 'finished';
+    if (bjPlayers.length === 1) {
+      room.winners = bjPlayers;
+      room.result = 21;
+      const mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+      for (const [, p] of Object.entries(room.players)) {
+        const m = p.mise || mise;
+        if (bjPlayers.includes(p.name)) {
+          p.solde = (p.solde || 100) + m;
+        } else {
+          p.solde = (p.solde || 100) - m;
+        }
+      }
+    } else {
+      room.winners = bjPlayers;
+      room.result = 21;
+      // Push : pas de mouvement de solde
+    }
+    res.status(200).json({ success: true, blackjack: true, winners: bjPlayers, push: bjPlayers.length > 1 });
+    return;
+  }
+
   res.status(200).json({ success: true });
 }
 
 /**
  * POST /api/hit — pioche une carte
+ * Auto-stand si score >= 21 (bust ou blackjack pendant le jeu)
  */
 async function hit(room, body, res, games) {
   const { playerId } = body;
@@ -48,7 +79,7 @@ async function hit(room, body, res, games) {
   player.hand.push(room.deck.pop());
   player.score = calculateScore(player.hand);
 
-  if (player.score > 21) {
+  if (player.score >= 21) {
     player.isActive = false;
     player.stand = true;
     nextTurn(room);
@@ -118,6 +149,33 @@ async function redeal(room, body, res, games) {
     p.isActive = true;
     p.stand = false;
     p.mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+  }
+
+  // Vérifier blackjack naturel
+  const bjPlayers = Object.entries(room.players)
+    .filter(([, p]) => p.score === 21 && p.hand.length === 2)
+    .map(([, p]) => p.name);
+
+  if (bjPlayers.length >= 1) {
+    room.phase = 'finished';
+    if (bjPlayers.length === 1) {
+      room.winners = bjPlayers;
+      room.result = 21;
+      const mise = room.miseParDefaut || MISE_PAR_DEFAUT;
+      for (const [, p] of Object.entries(room.players)) {
+        const m = p.mise || mise;
+        if (bjPlayers.includes(p.name)) {
+          p.solde = (p.solde || 100) + m;
+        } else {
+          p.solde = (p.solde || 100) - m;
+        }
+      }
+    } else {
+      room.winners = bjPlayers;
+      room.result = 21;
+    }
+    res.status(200).json({ success: true, blackjack: true, winners: bjPlayers, push: bjPlayers.length > 1 });
+    return;
   }
 
   res.status(200).json({ success: true });
