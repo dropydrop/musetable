@@ -7,10 +7,10 @@ window.bizkit.renderer = function(gs) {
   const board = window.dom.board;
   board.innerHTML = '';
 
-  // Zone des dés (plateau) — sauté si une animation est active
-  if (!window._diceRolling.active && gs.lastDice && gs.lastDice.results) {
+  // Zone des dés (plateau)
+  if (gs.lastDice && gs.lastDice.results) {
     const diceArea = document.createElement('div');
-    diceArea.className = 'player-area';
+    diceArea.className = 'player-area dice-area';
     diceArea.style.borderColor = 'var(--gold)';
     const dh = document.createElement('div');
     dh.className = 'p-header';
@@ -21,9 +21,9 @@ window.bizkit.renderer = function(gs) {
     dh.appendChild(dl);
     diceArea.appendChild(dh);
     const diceRow = document.createElement('div');
-    diceRow.className = 'cards-row';
+    diceRow.className = 'cards-row dice-row';
     for (const val of gs.lastDice.results) {
-      diceRow.appendChild(window.createDiceElement(val));
+      diceRow.appendChild(window.createDiceElement(val, window._diceRolling.active));
     }
     diceArea.appendChild(diceRow);
     board.appendChild(diceArea);
@@ -108,24 +108,33 @@ window.bizkit.rollDice = async function() {
       playerId: window.state.playerId
     });
     const results = res.results;
-    const board = window.dom.board;
-    const diceArea = document.createElement('div');
-    diceArea.className = 'player-area dice-area';
-    diceArea.style.borderColor = 'var(--gold)';
-    const dh = document.createElement('div');
-    dh.className = 'p-header';
-    const dl = document.createElement('span');
-    dl.className = 'p-name';
-    dl.textContent = '🎲 ' + (res.playerName || 'Dés');
-    dh.appendChild(dl);
-    diceArea.appendChild(dh);
+
+    window._diceRolling.results = results;
+    window._diceRolling.active = true;
+
+    let diceArea = document.querySelector('.dice-area');
+    if (!diceArea) {
+      const board = window.dom.board;
+      diceArea = document.createElement('div');
+      diceArea.className = 'player-area dice-area';
+      diceArea.style.borderColor = 'var(--gold)';
+      const dh = document.createElement('div');
+      dh.className = 'p-header';
+      const dl = document.createElement('span');
+      dl.className = 'p-name';
+      dl.textContent = '🎲 ' + (res.playerName || 'Dés');
+      dh.appendChild(dl);
+      diceArea.appendChild(dh);
+      board.appendChild(diceArea);
+    }
+    const oldRow = diceArea.querySelector('.dice-row');
+    if (oldRow) oldRow.remove();
     const diceRow = document.createElement('div');
     diceRow.className = 'cards-row dice-row';
     for (const val of results) {
       diceRow.appendChild(window.createDiceElement(val, true));
     }
     diceArea.appendChild(diceRow);
-    board.appendChild(diceArea);
     window.startDiceRolling(results);
     const btn = window._bizkitNextBtn;
     if (btn) {

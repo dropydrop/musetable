@@ -79,10 +79,10 @@ window.free.renderer = function(gs) {
     board.appendChild(tableArea);
   }
 
-  // Résultats dés (sauté si une animation de lancer est active)
-  if (!window._diceRolling.active && gs.lastDice && gs.lastDice.results) {
+  // Résultats dés
+  if (gs.lastDice && gs.lastDice.results) {
     const diceArea = document.createElement('div');
-    diceArea.className = 'player-area';
+    diceArea.className = 'player-area dice-area';
     diceArea.style.borderColor = 'var(--green)';
     const dh = document.createElement('div');
     dh.className = 'p-header';
@@ -92,9 +92,9 @@ window.free.renderer = function(gs) {
     dh.appendChild(dl);
     diceArea.appendChild(dh);
     const diceRow = document.createElement('div');
-    diceRow.className = 'cards-row';
+    diceRow.className = 'cards-row dice-row';
     for (const val of gs.lastDice.results) {
-      diceRow.appendChild(window.createDiceElement(val));
+      diceRow.appendChild(window.createDiceElement(val, window._diceRolling.active));
     }
     diceArea.appendChild(diceRow);
     board.appendChild(diceArea);
@@ -231,24 +231,35 @@ window.free.rollDice = async function() {
   try {
     const res = await window.api('POST', '/api/free/roll', { roomCode: window.state.roomCode });
     const results = res.results;
-    const board = window.dom.board;
-    const diceArea = document.createElement('div');
-    diceArea.className = 'player-area dice-area';
-    diceArea.style.borderColor = 'var(--green)';
-    const dh = document.createElement('div');
-    dh.className = 'p-header';
-    const dl = document.createElement('span');
-    dl.className = 'p-name';
-    dl.textContent = '🎲 Dés';
-    dh.appendChild(dl);
-    diceArea.appendChild(dh);
+
+    window._diceRolling.results = results;
+    window._diceRolling.active = true;
+
+    // Créer les dés roulants dans le board (feedback immédiat — le prochain poll les remplace)
+    let diceArea = document.querySelector('.dice-area');
+    if (!diceArea) {
+      const board = window.dom.board;
+      diceArea = document.createElement('div');
+      diceArea.className = 'player-area dice-area';
+      diceArea.style.borderColor = 'var(--green)';
+      const dh = document.createElement('div');
+      dh.className = 'p-header';
+      const dl = document.createElement('span');
+      dl.className = 'p-name';
+      dl.textContent = '🎲 Dés';
+      dh.appendChild(dl);
+      diceArea.appendChild(dh);
+      board.appendChild(diceArea);
+    }
+    const oldRow = diceArea.querySelector('.dice-row');
+    if (oldRow) oldRow.remove();
     const diceRow = document.createElement('div');
     diceRow.className = 'cards-row dice-row';
     for (const val of results) {
       diceRow.appendChild(window.createDiceElement(val, true));
     }
     diceArea.appendChild(diceRow);
-    board.appendChild(diceArea);
+
     window.startDiceRolling(results);
     window.showToast('🎲 Lancé !');
   }
