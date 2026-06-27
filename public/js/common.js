@@ -168,7 +168,7 @@ window.showToast = function(msg, duration) {
 };
 
 window.getGameTypeLabel = function(type) {
-  return ({ blackjack:'♠ Blackjack', tarot:'🎴 Tarot Africain', pyramide:'🔺 Pyramide', bizkit:'🎲 Bizkit', free:'🃏 Libre' })[type] || type || 'Libre';
+  return ({ blackjack:'♠ Blackjack', tarot:'🎴 Tarot Africain', devine:'🤯 Devine Tête', pyramide:'🔺 Pyramide', bizkit:'🎲 Bizkit', free:'🃏 Libre' })[type] || type || 'Libre';
 };
 
 // --- Navigation

@@ -11,6 +11,9 @@ const {
 const blackjack = require('./handlers/blackjack.js');
 const free = require('./handlers/free.js');
 const bizkit = require('./handlers/bizkit.js');
+const tarot = require('./handlers/tarot.js');
+const devine = require('./handlers/devine.js');
+const pyramide = require('./handlers/pyramide.js');
 
 const games = {};
 
@@ -78,7 +81,8 @@ module.exports = async (req, res) => {
       if (path === '/api/join-room' || path === '/api/leave-room' || path === '/api/game-state' ||
           path === '/api/reset' || path === '/api/start-game' || path === '/api/hit' ||
           path === '/api/stand' || path === '/api/double' ||
-          path.startsWith('/api/free/') || path.startsWith('/api/bizkit/')) {
+          path.startsWith('/api/free/') || path.startsWith('/api/bizkit/') ||
+          path.startsWith('/api/tarot/') || path.startsWith('/api/devine/') || path.startsWith('/api/pyramide/')) {
         res.status(404).json({ success: false, error: 'Salle introuvable' });
         return;
       }
@@ -229,6 +233,66 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/bizkit/next' && req.method === 'POST') {
         await bizkit.next(room, body, res, games); return;
+      }
+    }
+
+    // --- Routes spécifiques au Tarot Africain ---
+    if (room.gameType === 'tarot') {
+      if (path === '/api/start-game' && req.method === 'POST') {
+        await tarot.start(room, body, res, games); return;
+      }
+      if (path === '/api/tarot/start' && req.method === 'POST') {
+        await tarot.start(room, body, res, games); return;
+      }
+      if (path === '/api/tarot/bid' && req.method === 'POST') {
+        await tarot.bid(room, body, res, games); return;
+      }
+      if (path === '/api/tarot/play' && req.method === 'POST') {
+        await tarot.play(room, body, res, games); return;
+      }
+      if (path === '/api/tarot/next-trick' && req.method === 'POST') {
+        await tarot.nextTrick(room, body, res, games); return;
+      }
+      if (path === '/api/tarot/end-round' && req.method === 'POST') {
+        await tarot.end(room, body, res, games); return;
+      }
+      if (path === '/api/tarot/state' && req.method === 'GET') {
+        await tarot.state(room, body, res, games); return;
+      }
+    }
+
+    // --- Routes spécifiques à Devine Tête ---
+    if (room.gameType === 'devine') {
+      if (path === '/api/start-game' && req.method === 'POST') {
+        await devine.start(room, body, res, games); return;
+      }
+      if (path === '/api/devine/action' && req.method === 'POST') {
+        await devine.doAction(room, body, res, games); return;
+      }
+      if (path === '/api/devine/state' && req.method === 'GET') {
+        await devine.state(room, body, res, games); return;
+      }
+    }
+
+    // --- Routes spécifiques à la Pyramide ---
+    if (room.gameType === 'pyramide') {
+      if (path === '/api/start-game' && req.method === 'POST') {
+        await pyramide.start(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/start' && req.method === 'POST') {
+        await pyramide.start(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/flip' && req.method === 'POST') {
+        await pyramide.flip(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/match' && req.method === 'POST') {
+        await pyramide.match(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/next' && req.method === 'POST') {
+        await pyramide.next(room, body, res, games); return;
+      }
+      if (path === '/api/pyramide/state' && req.method === 'GET') {
+        await pyramide.state(room, body, res, games); return;
       }
     }
 
