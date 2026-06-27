@@ -12,135 +12,88 @@ window.tarot.renderer = function(gs) {
   const board = window.dom.board;
   board.innerHTML = '';
 
-  // Vies
+  // === Vies + Infos manche ===
   if (gs.vies && Object.keys(gs.vies).length > 0) {
-    const viesBox = document.createElement('div');
-    viesBox.className = 'player-area';
-    viesBox.style.borderColor = 'var(--gold)';
+    const box = document.createElement('div');
+    box.className = 'player-area';
+    box.style.borderColor = 'var(--gold)';
     const h = document.createElement('div');
     h.className = 'p-header';
-    h.textContent = '❤️ Vies';
-    viesBox.appendChild(h);
+    h.textContent = '❤️ Vies  |  📋 ' + (gs.cartesDistribuees || '?') + ' cartes/joueur';
+    box.appendChild(h);
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap';
+    row.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;padding:4px 0';
     for (const [id, v] of Object.entries(gs.vies)) {
       const tag = document.createElement('span');
       tag.className = 'p-name';
-      tag.textContent = (gs.players && gs.players[id] ? gs.players[id].name : id) + ' : ' + v;
+      const nom = gs.joueurs && gs.players && gs.players[id] ? gs.players[id].name : id;
+      tag.textContent = nom + ' ❤️' + v;
+      if (id === gs.joueurs?.[gs.dealerIndex]) tag.textContent += ' 🎩';
       row.appendChild(tag);
     }
-    viesBox.appendChild(row);
-    board.appendChild(viesBox);
+    box.appendChild(row);
+    board.appendChild(box);
   }
 
-  // Infos manche
-  const info = document.createElement('div');
-  info.className = 'player-area';
-  const infoH = document.createElement('div');
-  infoH.className = 'p-header';
-  infoH.textContent = '📋 Manche — ' + (gs.cartesDistribuees || '?') + ' cartes/joueur';
-  info.appendChild(infoH);
-
-  if (gs.dealerIndex !== undefined && gs.joueurs) {
-    const dealerName = gs.players && gs.players[gs.joueurs[gs.dealerIndex]] ?
-      gs.players[gs.joueurs[gs.dealerIndex]].name : 'Joueur ' + (gs.dealerIndex + 1);
-    const d = document.createElement('div');
-    d.style.cssText = 'font-size:.85rem;color:var(--muted)';
-    d.textContent = 'Donneur : ' + dealerName;
-    info.appendChild(d);
-  }
-  board.appendChild(info);
-
-  // Paris
-  if (gs.paris && Object.keys(gs.paris).length > 0) {
-    const parisBox = document.createElement('div');
-    parisBox.className = 'player-area';
-    parisBox.style.borderColor = 'var(--green)';
-    const ph = document.createElement('div');
-    ph.className = 'p-header';
-    ph.textContent = '📊 Paris';
-    parisBox.appendChild(ph);
-    for (const [id, nb] of Object.entries(gs.paris)) {
-      const tag = document.createElement('div');
-      tag.style.cssText = 'font-size:.9rem';
-      tag.textContent = (gs.players && gs.players[id] ? gs.players[id].name : id) + ' : ' + nb;
-      parisBox.appendChild(tag);
-    }
-    board.appendChild(parisBox);
-  }
-
-  // Pli actuel
-  if (gs.pliActuel && gs.pliActuel.length > 0) {
-    const pliBox = document.createElement('div');
-    pliBox.className = 'player-area';
-    pliBox.style.borderColor = 'var(--gold)';
-    const plh = document.createElement('div');
-    plh.className = 'p-header';
-    plh.textContent = '♠ Pli en cours';
-    pliBox.appendChild(plh);
-    const row = document.createElement('div');
-    row.className = 'cards-row';
-    for (const p of gs.pliActuel) {
-      const cardEl = document.createElement('div');
-      cardEl.className = 'card';
-      const v = p.carte === 0 ? 'Excuse' : String(p.carte);
-      const ev = p.excuseValue !== null ? ' (' + p.excuseValue + ')' : '';
-      cardEl.textContent = v + ev;
-      cardEl.style.cssText = 'width:64px;height:89px;border-radius:8px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem';
-      row.appendChild(cardEl);
-    }
-    pliBox.appendChild(row);
-    board.appendChild(pliBox);
-  }
-
-  // Plis gagnés
-  if (gs.plisGagnes && Object.keys(gs.plisGagnes).length > 0) {
-    const gBox = document.createElement('div');
-    gBox.className = 'player-area';
-    const gh = document.createElement('div');
-    gh.className = 'p-header';
-    gh.textContent = '🏆 Plis gagnés';
-    gBox.appendChild(gh);
-    for (const [id, n] of Object.entries(gs.plisGagnes)) {
-      const tag = document.createElement('div');
-      tag.style.cssText = 'font-size:.9rem';
-      const pname = gs.players && gs.players[id] ? gs.players[id].name : id;
-      const pari = gs.paris && gs.paris[id] !== undefined ? ' (pari: ' + gs.paris[id] + ')' : '';
-      tag.textContent = pname + ' : ' + n + '/ ' + (gs.cartesDistribuees || '?') + pari;
-      gBox.appendChild(tag);
-    }
-    board.appendChild(gBox);
-  }
-
-  // Joueurs (mains)
-  if (gs.players) {
-    for (const [id, p] of Object.entries(gs.players)) {
+  // === Joueurs ===
+  if (gs.joueurs) {
+    for (const id of gs.joueurs) {
+      const p = gs.players?.[id] || {};
+      const main = gs.mains?.[id] || [];
       const area = document.createElement('div');
       area.className = 'player-area';
       if (id === window.state.playerId) area.classList.add('me');
+      if (id === gs.joueurActif) area.style.borderColor = 'var(--gold)';
+
       const header = document.createElement('div');
       header.className = 'p-header';
+
       const nameSpan = document.createElement('span');
       nameSpan.className = 'p-name';
-      nameSpan.textContent = id === window.state.playerId ? '👤 ' + p.name + ' (moi)' : p.name;
-      if (gs.joueurs && gs.dealerIndex !== undefined && gs.joueurs[gs.dealerIndex] === id) {
-        nameSpan.textContent += ' 🎩';
+      const nom = p.name || id;
+      if (window.state.anonMode) {
+        nameSpan.textContent = id === window.state.playerId ? '👤 Moi' : '👤 Joueur';
+      } else {
+        nameSpan.textContent = id === window.state.playerId ? '👤 ' + nom + ' (moi)' : nom;
       }
+      if (id === gs.joueurs?.[gs.dealerIndex]) nameSpan.textContent += ' 🎩';
+      if (id === gs.joueurActif) nameSpan.textContent += ' 🎯';
       header.appendChild(nameSpan);
+
+      // Pari
+      const pariSpan = document.createElement('span');
+      pariSpan.style.cssText = 'font-size:.85rem;color:var(--muted);margin-left:8px';
+      if (gs.paris && gs.paris[id] !== undefined && (gs.parisFaits?.[id] || gs.phase !== 'PARI')) {
+        pariSpan.textContent = '🏷️ ' + gs.paris[id];
+      } else if (gs.phase === 'PARI' && (!gs.parisFaits?.[id])) {
+        pariSpan.textContent = '⏳ pari...';
+      }
+      header.appendChild(pariSpan);
+
+      // Plis gagnés
+      const plisSpan = document.createElement('span');
+      plisSpan.style.cssText = 'font-size:.85rem;color:var(--gold);margin-left:8px';
+      if (gs.plisGagnes?.[id] > 0) {
+        plisSpan.textContent = '🏆 ' + gs.plisGagnes[id];
+      }
+      header.appendChild(plisSpan);
+
       area.appendChild(header);
 
-      if (p.hand && p.hand.length > 0 && id === window.state.playerId) {
+      // Mains — visibles pour tout le monde (Tarot Africain = jeu ouvert)
+      if (main.length > 0) {
         const cardsRow = document.createElement('div');
-        cardsRow.className = 'cards-row ' + window.getCardLayout(p.hand);
-        p.hand.forEach((carte, i) => {
+        cardsRow.className = 'cards-row ' + window.getCardLayout(main);
+        main.forEach((carte, i) => {
           const val = carte === 0 ? 'Excuse' : String(carte);
           const el = document.createElement('div');
           el.className = 'card';
           el.textContent = val;
-          el.style.cssText = 'width:64px;height:89px;border-radius:8px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem';
+          el.style.cssText = 'width:48px;height:68px;border-radius:6px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem';
           el.style.setProperty('--i', i);
-          if (gs.phase === 'JEU') {
+          if (gs.phase === 'JEU' && id === window.state.playerId && id === gs.joueurActif) {
             el.style.cursor = 'pointer';
+            el.style.border = '2px solid var(--accent)';
             el.addEventListener('click', () => window.tarot.playCard(i));
           }
           cardsRow.appendChild(el);
@@ -152,54 +105,191 @@ window.tarot.renderer = function(gs) {
     }
   }
 
-  window.dom['game-status'].textContent = 'Phase : ' + (gs.phase || 'En attente');
-  window.dom['game-status'].className = 'game-status';
+  // === Pli actuel ===
+  if (gs.pliActuel && gs.pliActuel.length > 0) {
+    const pliBox = document.createElement('div');
+    pliBox.className = 'player-area';
+    pliBox.style.borderColor = 'var(--accent)';
+    const plh = document.createElement('div');
+    plh.className = 'p-header';
+    plh.textContent = '♠ Pli en cours';
+    pliBox.appendChild(plh);
+    const row = document.createElement('div');
+    row.className = 'cards-row';
+    for (const p of gs.pliActuel) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card';
+      const v = p.carte === 0 ? 'Excuse' : String(p.carte);
+      const ev = p.excuseValue !== null ? ' (' + p.excuseValue + ')' : '';
+      const pname = gs.players?.[p.playerId]?.name || p.playerId;
+      cardEl.innerHTML = v + ev + '<br><span style="font-size:.65rem;color:var(--muted)">' + pname + '</span>';
+      cardEl.style.cssText = 'width:64px;height:89px;border-radius:8px;background:#fff;color:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:.9rem';
+      row.appendChild(cardEl);
+    }
+    pliBox.appendChild(row);
+    board.appendChild(pliBox);
+  }
+
+  // === Status ===
+  const gsEl = window.dom['game-status'];
+  if (gs.phase === 'PARI') {
+    const actuel = gs.bidActuel;
+    const isMe = actuel === window.state.playerId;
+    const nom = actuel && gs.players?.[actuel]?.name || '?';
+    gsEl.textContent = isMe ? '📊 À vous de parier !' : '📊 ' + nom + ' parie...';
+    gsEl.className = 'game-status';
+  } else if (gs.phase === 'JEU') {
+    const actif = gs.joueurActif;
+    const isMe = actif === window.state.playerId;
+    const nom = actif && gs.players?.[actif]?.name || '?';
+    gsEl.textContent = isMe ? '♠ À vous de jouer une carte !' : '♠ ' + nom + ' joue...';
+    gsEl.className = 'game-status';
+  } else if (gs.phase === 'SCORE') {
+    gsEl.textContent = '📊 Résultats de la manche';
+    gsEl.className = 'game-status winner';
+  } else if (gs.phase === 'FINI') {
+    const gagnant = gs.gagnant ? (gs.players?.[gs.gagnant]?.name || gs.gagnant) : '?';
+    gsEl.textContent = '🏆 ' + gagnant + ' a gagné la partie !';
+    gsEl.className = 'game-status winner';
+  } else {
+    gsEl.textContent = 'En attente...';
+    gsEl.className = 'game-status waiting';
+  }
+
+  // Contrôles
+  updateTarotControls(gs);
 };
 
-window.tarot.init = function() {
-  setTarotControls();
-};
+function updateTarotControls(gs) {
+  if (window.state.isSpectator) {
+    window.dom['screen-game'].classList.add('spectator');
+    return;
+  }
+  window.dom['screen-game'].classList.remove('spectator');
 
-function setTarotControls() {
-  window.dom.controls.innerHTML = '';
-
-  if (window.state.isSpectator) return;
-
-  const bidRow = document.createElement('div');
-  bidRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center';
-
-  const bidLabel = document.createElement('span');
-  bidLabel.textContent = 'Pari : ';
-  bidLabel.style.fontWeight = '700';
-  bidRow.appendChild(bidLabel);
-
-  const bidInput = document.createElement('input');
-  bidInput.type = 'number';
-  bidInput.min = 0;
-  bidInput.max = 5;
-  bidInput.value = 0;
-  bidInput.style.cssText = 'width:60px;padding:8px;text-align:center';
-  bidInput.id = 'tarot-bid-input';
-  bidRow.appendChild(bidInput);
-
-  const bidBtn = document.createElement('button');
-  bidBtn.className = 'btn-gold';
-  bidBtn.textContent = 'Parier';
-  bidBtn.addEventListener('click', () => {
-    const nb = parseInt(document.getElementById('tarot-bid-input').value) || 0;
-    window.tarot.placeBid(nb);
-  });
-  bidRow.appendChild(bidBtn);
-
-  const resolveBtn = document.createElement('button');
-  resolveBtn.className = 'btn-green';
-  resolveBtn.textContent = 'Résoudre pli';
-  resolveBtn.addEventListener('click', window.tarot.resolveTrick);
-  bidRow.appendChild(resolveBtn);
-
-  window.dom.controls.appendChild(bidRow);
+  if (gs.phase === 'PARI') {
+    setTarotBidControls(gs);
+  } else if (gs.phase === 'JEU') {
+    setTarotGameControls(gs);
+  } else if (gs.phase === 'SCORE' || gs.phase === 'FINI') {
+    setTarotScoreControls(gs);
+  } else {
+    setTarotEmptyControls();
+  }
 }
 
+function setTarotBidControls(gs) {
+  const controls = window.dom.controls;
+  controls.innerHTML = '';
+
+  const isMyTurn = gs.bidActuel === window.state.playerId;
+  const maxBid = gs.cartesDistribuees || 5;
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center';
+
+  const label = document.createElement('span');
+  label.textContent = 'Pari : ';
+  label.style.fontWeight = '700';
+  row.appendChild(label);
+
+  for (let i = 0; i <= maxBid; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.className = 'btn-outline';
+    btn.style.cssText = 'min-width:40px;padding:10px 8px;font-weight:700';
+    let disabled = !isMyTurn;
+    if (isMyTurn && gs.interdit !== null && i === gs.interdit) {
+      disabled = true;
+      btn.style.textDecoration = 'line-through';
+      btn.style.opacity = '0.4';
+      btn.title = 'Valeur interdite (total = nb cartes)';
+    }
+    if (gs.parisFaits?.[window.state.playerId]) disabled = true;
+    btn.disabled = disabled;
+    if (!disabled) {
+      btn.addEventListener('click', () => window.tarot.placeBid(i));
+    }
+    row.appendChild(btn);
+  }
+
+  controls.appendChild(row);
+}
+
+function setTarotGameControls(gs) {
+  const controls = window.dom.controls;
+  controls.innerHTML = '';
+
+  const isMyTurn = gs.joueurActif === window.state.playerId;
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center';
+
+  if (isMyTurn) {
+    const label = document.createElement('span');
+    label.textContent = 'Cliquez sur une carte de votre main pour la jouer';
+    label.style.cssText = 'font-size:.85rem;color:var(--muted)';
+    row.appendChild(label);
+  }
+
+  // Bouton résoudre pli (quand toutes les cartes sont jouées)
+  if (gs.pliActuel && gs.pliActuel.length > 0) {
+    const resolveBtn = document.createElement('button');
+    resolveBtn.className = 'btn-gold';
+    resolveBtn.textContent = '🏆 Résoudre le pli';
+    resolveBtn.addEventListener('click', window.tarot.resolveTrick);
+    row.appendChild(resolveBtn);
+  }
+
+  controls.appendChild(row);
+}
+
+function setTarotScoreControls(gs) {
+  const controls = window.dom.controls;
+  controls.innerHTML = '';
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center';
+
+  if (gs.phase === 'SCORE') {
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn-gold';
+    nextBtn.textContent = '🔄 Prochaine manche';
+    nextBtn.addEventListener('click', async () => {
+      if (!window.state.roomCode) return;
+      try {
+        await window.api('POST', '/api/start-game', { roomCode: window.state.roomCode });
+      } catch (e) { window.showToast('Erreur : ' + e.message); }
+    });
+    row.appendChild(nextBtn);
+  }
+
+  if (gs.phase === 'FINI') {
+    const replayBtn = document.createElement('button');
+    replayBtn.className = 'btn-green';
+    replayBtn.textContent = '🔄 Nouvelle partie';
+    replayBtn.addEventListener('click', async () => {
+      if (!window.state.roomCode) return;
+      try {
+        await window.api('POST', '/api/reset', { roomCode: window.state.roomCode });
+      } catch (e) { window.showToast('Erreur : ' + e.message); }
+    });
+    row.appendChild(replayBtn);
+  }
+
+  controls.appendChild(row);
+}
+
+function setTarotEmptyControls() {
+  window.dom.controls.innerHTML = '';
+}
+
+// --- INIT ---
+window.tarot.init = function() {
+  // Les contrôles sont gérés dynamiquement par updateTarotControls
+};
+
+// --- ACTIONS API ---
 window.tarot.placeBid = async function(nb) {
   if (!window.state.roomCode || !window.state.playerId) return;
   try {

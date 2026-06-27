@@ -15,6 +15,28 @@ function shuffle(arr) {
   return arr;
 }
 
+function getParieurs(room) {
+  const joueurs = room.joueurs || [];
+  if (joueurs.length === 0) return [];
+  const start = (room.dealerIndex + 1) % joueurs.length;
+  const result = [];
+  for (let i = 0; i < joueurs.length; i++) {
+    result.push(joueurs[(start + i) % joueurs.length]);
+  }
+  return result;
+}
+
+function isLastBidder(room, playerId) {
+  const joueurs = room.joueurs || [];
+  if (joueurs.length === 0) return false;
+  return playerId === joueurs[room.dealerIndex];
+}
+
+function getBidInterdit(room) {
+  const totalActuel = Object.values(room.paris).reduce((a, b) => a + b, 0);
+  return room.cartesDistribuees - totalActuel;
+}
+
 function startGame(room) {
   const ids = Object.keys(room.players);
   if (ids.length < 2) return { success: false, error: 'Minimum 2 joueurs requis' };
@@ -24,11 +46,12 @@ function startGame(room) {
   room.dealerIndex = (room.dealerIndex || 0) % ids.length;
   room.cartesDistribuees = room.cartesDistribuees || 5;
   room.paris = {};
+  room.parisFaits = {};
   room.mains = {};
   room.pliActuel = [];
   room.plisGagnes = {};
-  room.parisPhase = { debut: (room.dealerIndex + 1) % ids.length, fin: room.dealerIndex, index: 0 };
   room.joueurs = ids.slice();
+  room.tourIndex = 0;
 
   // Distribuer les cartes
   const deck = room.tarotDeck;
@@ -38,35 +61,62 @@ function startGame(room) {
       if (deck.length > 0) room.mains[id].push(deck.pop());
     }
     room.paris[id] = 0;
+    room.parisFaits[id] = false;
     room.plisGagnes[id] = 0;
   }
 
   return { success: true, cartesDistribuees: room.cartesDistribuees };
 }
 
-function isBidValid(room, playerId, nb) {
-  const ids = room.joueurs;
-  const total = ids.reduce((s, id) => s + room.paris[id], 0);
-  const isLast = playerId === room.parisPhase.fin;
-  if (isLast && (total + nb) === room.cartesDistribuees) return false;
-  return nb >= 0 && nb <= room.cartesDistribuees;
+function bidActuel(room) {
+  const parieurs = getParieurs(room);
+  return room.tourIndex < parieurs.length ? parieurs[room.tourIndex] : null;
+}
+
+function canBid(room, playerId, nb) {
+  if (playerId !== bidActuel(room)) return false;
+  if (room.phase !== 'PARI') return false;
+  if (nb < 0 || nb > room.cartesDistribuees) return false;
+  if (nb !== Math.floor(nb)) return false;
+
+  if (isLastBidder(room, playerId)) {
+    const interdit = getBidInterdit(room);
+    if (nb === interdit) return false;
+  }
+  return true;
 }
 
 function placerPari(room, playerId, nb) {
   if (!room.paris || room.paris[playerId] === undefined) return { success: false, error: 'Joueur invalide' };
-  if (!isBidValid(room, playerId, nb)) return { success: false, error: 'Pari invalide' };
+  if (!canBid(room, playerId, nb)) return { success: false, error: 'Pari invalide' };
+
   room.paris[playerId] = nb;
-  return { success: true };
+  room.parisFaits[playerId] = true;
+  room.tourIndex++;
+
+  if (areBidsComplete(room)) {
+    room.phase = 'JEU';
+    room.tourIndex = 0; // reset pour la phase de jeu
+  }
+
+  return { success: true, phase: room.phase, prochain: bidActuel(room) };
 }
 
 function areBidsComplete(room) {
-  return room.joueurs.every(id => room.paris[id] > 0 || room.paris[id] === 0);
+  return room.joueurs.every(id => room.parisFaits[id] === true);
+}
+
+function joueurActuelJeu(room) {
+  if (!room.joueurs || room.joueurs.length === 0) return null;
+  return room.joueurs[room.tourIndex % room.joueurs.length];
 }
 
 function jouerCarte(room, playerId, cardIndex, excuseValue) {
   const main = room.mains[playerId];
   if (!main) return { success: false, error: 'Joueur invalide' };
   if (cardIndex < 0 || cardIndex >= main.length) return { success: false, error: 'Carte invalide' };
+  if (room.phase !== 'JEU') return { success: false, error: "Pas en phase JEU" };
+  if (playerId !== joueurActuelJeu(room)) return { success: false, error: 'Pas votre tour' };
 
   const carte = main.splice(cardIndex, 1)[0];
   const pli = room.pliActuel;
@@ -77,7 +127,9 @@ function jouerCarte(room, playerId, cardIndex, excuseValue) {
     pli.push({ playerId, carte, excuseValue: null });
   }
 
-  return { success: true, carte, pli: room.pliActuel };
+  room.tourIndex++;
+
+  return { success: true, carte, pli: room.pliActuel, prochain: joueurActuelJeu(room) };
 }
 
 function resolveTrick(room) {
@@ -140,15 +192,21 @@ function getPublicState(room) {
     dealerIndex: room.dealerIndex,
     phase: room.phase,
     paris: room.paris,
-    mainsPubliques: room.joueurs ? room.joueurs.map(id => ({
-      playerId: id, count: (room.mains[id] || []).length
-    })) : [],
+    parisFaits: room.parisFaits || {},
+    mains: room.mains || {},
     pliActuel: room.pliActuel || [],
     plisGagnes: room.plisGagnes || {},
-    joueurs: room.joueurs || []
+    joueurs: room.joueurs || [],
+    tourIndex: room.tourIndex || 0,
+    bidActuel: bidActuel(room),
+    joueurActif: room.phase === 'JEU' ? joueurActuelJeu(room) : bidActuel(room),
+    parieurs: room.joueurs ? getParieurs(room) : [],
+    interdit: room.phase === 'PARI' ? getBidInterdit(room) : null
   };
 }
 
 module.exports = {
-  createTarotDeck, startGame, placerPari, jouerCarte, resolveTrick, endRound, getPublicState, isBidValid, areBidsComplete, areTricksComplete
+  createTarotDeck, startGame, placerPari, jouerCarte, resolveTrick,
+  endRound, getPublicState, canBid, areBidsComplete, areTricksComplete,
+  getParieurs, isLastBidder, getBidInterdit, bidActuel, joueurActuelJeu
 };
