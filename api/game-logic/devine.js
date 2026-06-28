@@ -231,9 +231,10 @@ function startGame(room, body) {
   for (const id of room.playerOrder) {
     room.scores[id] = { trouve: 0, passe: 0, mots: [] };
   }
-  room.mots = [];
+  room.mots = shuffle([...MOTS]).slice(0, room.config.motsParTour);
   room.indexActuel = 0;
-  room.timestampDebutTour = null;
+  room.timestampDebutTour = Date.now();
+  room.phase = 'TURN_PLAYING';
   room.historique = [];
 
   return { success: true };

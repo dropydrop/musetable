@@ -28,11 +28,13 @@ test('startGame — initialise la config avec les valeurs par défaut', () => {
   const room = makeDevineRoom(['Alice']);
   const r = startGame(room, {});
   assert.ok(r.success);
-  assert.strictEqual(room.phase, 'TURN_START');
+  assert.strictEqual(room.phase, 'TURN_PLAYING');
   assert.strictEqual(room.config.timerPerTour, 45);
   assert.strictEqual(room.config.motsParTour, 6);
   assert.strictEqual(room.guesserId, 'id_Alice');
   assert.deepStrictEqual(Object.keys(room.scores), ['id_Alice']);
+  assert.strictEqual(room.mots.length, 6);
+  assert.ok(typeof room.mots[0] === 'string');
 });
 
 test('startGame — utilise les valeurs du body', () => {
@@ -64,9 +66,10 @@ test('startGame — plusieurs joueurs', () => {
   assert.deepStrictEqual(Object.keys(room.scores), ['id_Alice', 'id_Bob', 'id_Carol']);
 });
 
-test('startTurn — phase TURN_START → TURN_PLAYING', () => {
+test('startTurn — phase TURN_START → TURN_PLAYING (manuel)', () => {
   const room = makeDevineRoom(['Alice']);
-  startGame(room, {});
+  room.phase = 'TURN_START';
+  room.config = { timerPerTour: 45, motsParTour: 6 };
   const r = startTurn(room);
   assert.ok(r.success);
   assert.strictEqual(room.phase, 'TURN_PLAYING');
@@ -86,7 +89,6 @@ test('startTurn — échoue si mauvaise phase', () => {
 test('action — TROUVE incrémente le score', () => {
   const room = makeDevineRoom(['Alice']);
   startGame(room, { motsParTour: 4 });
-  startTurn(room);
   const r = action(room, { actionType: 'TROUVE' });
   assert.ok(r.success);
   assert.strictEqual(room.scores['id_Alice'].trouve, 1);
@@ -96,7 +98,6 @@ test('action — TROUVE incrémente le score', () => {
 test('action — PASSE incrémente le compteur', () => {
   const room = makeDevineRoom(['Alice']);
   startGame(room, { motsParTour: 4 });
-  startTurn(room);
   const r = action(room, { actionType: 'PASSE' });
   assert.ok(r.success);
   assert.strictEqual(room.scores['id_Alice'].passe, 1);
@@ -106,7 +107,6 @@ test('action — PASSE incrémente le compteur', () => {
 test('action — fin du tour → TURN_DONE', () => {
   const room = makeDevineRoom(['Alice']);
   startGame(room, { motsParTour: 4 });
-  startTurn(room);
   for (let i = 0; i < 3; i++) action(room, { actionType: 'TROUVE' });
   const r = action(room, { actionType: 'TROUVE' });
   assert.strictEqual(r.phase, 'TURN_DONE');
@@ -124,6 +124,7 @@ test('action — action invalide → erreur', () => {
 test('action — pas en phase TURN_PLAYING → erreur', () => {
   const room = makeDevineRoom(['Alice']);
   startGame(room, {});
+  room.phase = 'TURN_START';
   const r = action(room, { actionType: 'TROUVE' });
   assert.ok(!r.success);
 });
@@ -131,7 +132,6 @@ test('action — pas en phase TURN_PLAYING → erreur', () => {
 test('endTurn — force TURN_DONE', () => {
   const room = makeDevineRoom(['Alice']);
   startGame(room, {});
-  startTurn(room);
   const r = endTurn(room);
   assert.ok(r.success);
   assert.strictEqual(room.phase, 'TURN_DONE');
@@ -170,7 +170,6 @@ test('nextTurn — échoue si pas TURN_DONE', () => {
 test('getPublicState — contient les champs requis', () => {
   const room = makeDevineRoom(['Alice', 'Bob']);
   startGame(room, { motsParTour: 4 });
-  startTurn(room);
   action(room, { actionType: 'TROUVE' });
   const state = getPublicState(room);
   assert.ok(state.phase);
@@ -185,11 +184,13 @@ test('getPublicState — contient les champs requis', () => {
   assert.strictEqual(state.scores['id_Alice'].trouve, 1);
 });
 
-test('getPublicState — motCourant null en TURN_START', () => {
+test('getPublicState — motCourant non null après startGame (turn automatique)', () => {
   const room = makeDevineRoom(['Alice']);
   startGame(room, {});
   const state = getPublicState(room);
-  assert.strictEqual(state.motCourant, null);
+  assert.strictEqual(state.phase, 'TURN_PLAYING');
+  assert.ok(state.motCourant);
+  assert.ok(state.categorie);
 });
 
 test('getPublicState — winner en ALL_DONE avec plusieurs joueurs', () => {
