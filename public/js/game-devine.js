@@ -226,7 +226,7 @@ window.devine.renderer = function(gs) {
 
 // HTML des sélecteurs de config timer/mots
 function devineConfigHTML(gs) {
-  const cur = gs.config || { timerPerTour: 45, motsParTour: 6 };
+  const cur = window.state.devineConfig || gs.config || { timerPerTour: 45, motsParTour: 6 };
   const tOpts = [30, 45, 60].map(v =>
     `<option value="${v}"${v === cur.timerPerTour ? ' selected' : ''}>${v}s</option>`
   ).join('');
