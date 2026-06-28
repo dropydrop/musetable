@@ -2,88 +2,199 @@
 
 const CATEGORIES = {
   'Célébrités': [
-    'Brad Pitt', 'Leonardo DiCaprio', 'Johnny Depp', 'Will Smith', 
+    // Acteurs
+    'Brad Pitt', 'Leonardo DiCaprio', 'Johnny Depp', 'Will Smith',
     'Tom Cruise', 'Dwayne Johnson', 'Scarlett Johansson', 'Angelina Jolie',
     'Jennifer Lawrence', 'Margot Robbie', 'Ryan Reynolds', 'Chris Hemsworth',
     'Robert Downey Jr', 'Keanu Reeves', 'Morgan Freeman', 'Denzel Washington',
-    'Al Pacino', 'Robert De Niro', 'Jack Nicholson', 'Clint Eastwood',
-    'Meryl Streep', 'Cate Blanchett', 'Natalie Portman', 'Emma Watson',
-    'Daniel Radcliffe', 'Zendaya', 'Timothée Chalamet', 'Tom Holland',
-    'Millie Bobby Brown', 'Adele', 'Beyoncé', 'Taylor Swift',
-    'Rihanna', 'Eminem', 'Jay-Z', 'Michael Jordan',
-    'LeBron James', 'Kylian Mbappé', 'Lionel Messi', 'Cristiano Ronaldo'
+    'Al Pacino', 'Robert De Niro', 'Meryl Streep', 'Emma Watson',
+    'Tom Holland', 'Zendaya', 'Hugh Jackman', 'Ryan Gosling',
+    'Anne Hathaway', 'Joaquin Phoenix', 'Christian Bale', 'Sandra Bullock',
+    'Julia Roberts', 'George Clooney', 'Matt Damon',
+    // Chanteurs
+    'Adele', 'Beyoncé', 'Taylor Swift', 'Rihanna',
+    'Eminem', 'Jay-Z', 'Lady Gaga', 'Shakira',
+    'Ed Sheeran', 'Bruno Mars', 'Billie Eilish', 'Dua Lipa',
+    // Sportifs
+    'Michael Jordan', 'LeBron James', 'Kylian Mbappé', 'Lionel Messi',
+    'Cristiano Ronaldo', 'Serena Williams', 'Rafael Nadal', 'Roger Federer',
+    'Usain Bolt', 'Zinedine Zidane', 'Neymar', 'Novak Djokovic'
   ],
   'Pop-culture': [
-    'Zidane', 'Harry Potter', 'Mickey Mouse', 'Spider-Man',
-    'Donald Trump', 'Mozart', 'Napoléon', 'La Joconde',
-    'Tour Eiffel', 'Mont Blanc', 'Colisée', 'Seine',
-    'dragon', 'vampire', 'fantôme', 'pingouin',
-    'requin', 'paresseux', 'éléphant', 'vache',
-    'cactus', 'avion', 'fusée', 'château',
-    'guitare', 'piano', 'Soleil', 'Lune',
-    'arc-en-ciel', 'micro-ondes', 'plage', 'Titanic',
-    'Jurassic Park', 'Star Wars', 'Batman'
+    // Personnages
+    'Mickey Mouse', 'Spider-Man', 'Batman', 'Superman',
+    'Wonder Woman', 'Iron Man', 'Captain America', 'Thor',
+    'Deadpool', 'Wolverine', 'Indiana Jones', 'James Bond',
+    'Luke Skywalker', 'Darth Vader', 'Harry Potter', 'Hermione',
+    'Gandalf', 'King Kong', 'Godzilla',
+    // Films et œuvres
+    'Star Wars', 'Jurassic Park', 'Titanic', 'Avatar',
+    'Inception', 'Pulp Fiction', 'The Matrix', 'Forrest Gump',
+    'Gladiator', 'Interstellar', 'Back to the Future',
+    // Lieux et monuments
+    'Tour Eiffel', 'Mont Blanc', 'Colisée', 'Amazonie',
+    'Sahara', 'Himalaya', 'Grand Canyon', 'Mont-Saint-Michel',
+    'Château de Versailles', 'Machu Picchu',
+    // Mythiques
+    'dragon', 'vampire', 'fantôme', 'licorne',
+    'phénix', 'troll', 'yeti', 'centaure',
+    // Jeux vidéo
+    'Mario', 'Sonic', 'Pikachu', 'Pokémon',
+    'Zelda', 'Minecraft', 'Tetris'
   ],
   'Histoire': [
     'Jules César', 'Cléopâtre', 'Charlemagne', 'Jeanne d\'Arc',
     'Louis XIV', 'Marie-Antoinette', 'Victor Hugo', 'Charles de Gaulle',
     'Albert Einstein', 'Marie Curie', 'Nelson Mandela', 'Martin Luther King',
-    'Gandhi', 'Christophe Colomb', 'Vasco de Gama', 'Magellan',
-    'Alexandre le Grand', 'Hannibal', 'Spartacus', 'Attila',
-    'Gengis Khan', 'Marco Polo', 'Galilée', 'Copernic',
-    'Descartes', 'Voltaire', 'Rousseau', 'Robespierre',
-    'Danton', 'Che Guevara'
+    'Gandhi', 'Christophe Colomb', 'Magellan', 'Alexandre le Grand',
+    'Spartacus', 'Gengis Khan', 'Marco Polo', 'Galilée',
+    'Copernic', 'Descartes', 'Voltaire', 'Rousseau',
+    'Robespierre', 'Napoléon', 'Louis XVI', 'Henri IV',
+    'François 1er', 'Molière', 'Léonard de Vinci', 'Pasteur',
+    'Lavoisier', 'Beethoven', 'Mozart',
+    // Événements
+    'Révolution française', 'Empire romain', 'Égypte antique', 'Moyen-Âge',
+    'Renaissance', 'Siècle des Lumières', 'Guerre froide',
+    // Explorateurs
+    'Vasco de Gama', 'Hannibal', 'Attila', 'Che Guevara',
+    'Périclès', 'Auguste', 'Leonidas', 'Catherine II',
+    'Élisabeth Ire', 'Pierre le Grand',
+    'Pablo Picasso', 'Van Gogh', 'La Joconde'
   ],
   'Animaux': [
+    // Mammifères
     'lion', 'tigre', 'ours', 'loup',
     'renard', 'cerf', 'sanglier', 'lièvre',
-    'écureuil', 'castor', 'loutre', 'blaireau',
-    'hérisson', 'chauve-souris', 'dauphin', 'baleine',
-    'orque', 'phoque', 'morse', 'girafe',
-    'zèbre', 'rhinocéros', 'hippopotame', 'crocodile',
-    'alligator', 'serpent', 'lézard', 'tortue',
+    'écureuil', 'castor', 'hérisson', 'kangourou',
+    'koala', 'panda', 'paresseux', 'rat',
+    'souris', 'lapin', 'hamster',
+    // Mammifères marins
+    'dauphin', 'baleine', 'orque', 'phoque',
+    // Reptiles et amphibiens
+    'crocodile', 'serpent', 'lézard', 'tortue',
+    'crapaud', 'salamandre',
+    // Oiseaux
     'aigle', 'hibou', 'chouette', 'pélican',
-    'flamant rose', 'manchot', 'kangourou'
+    'flamant rose', 'manchot', 'corbeau', 'perroquet',
+    // Insectes
+    'papillon', 'libellule', 'coccinelle', 'abeille',
+    'fourmi', 'araignée',
+    // Exotiques
+    'girafe', 'zèbre', 'rhinocéros', 'hippopotame',
+    'éléphant', 'chimpanzé', 'gorille', 'chauve-souris',
+    'lama', 'alpaga', 'dromadaire', 'chameau'
   ],
   'Métiers': [
+    // Classiques
     'médecin', 'avocat', 'architecte', 'ingénieur',
     'professeur', 'chercheur', 'pilote', 'marin',
     'soldat', 'policier', 'pompier', 'menuisier',
     'électricien', 'plombier', 'maçon', 'peintre',
-    'sculpteur', 'écrivain', 'poète', 'compositeur',
+    'sculpteur', 'écrivain',
+    // Artistiques
+    'poète', 'compositeur', 'chanteur', 'acteur',
+    'cinéaste', 'photographe', 'danseur', 'musicien',
+    // Bouche
     'chef cuisinier', 'boulanger', 'pâtissier', 'boucher',
-    'charcutier', 'poissonnier', 'primeur', 'fleuriste',
-    'jardinier', 'paysan'
+    'fleuriste', 'primeur',
+    // Soin
+    'vétérinaire', 'dentiste', 'infirmier', 'pharmacien',
+    'sage-femme',
+    // Services
+    'jardinier', 'paysan', 'facteur', 'coiffeur',
+    'bibliothécaire', 'gardien', 'juge', 'notaire',
+    // Métiers rares
+    'astronaute', 'détective', 'plongeur', 'pompiste',
+    'interprète', 'traducteur', 'archéologue', 'géologue',
+    'courrier', 'livreur', 'serrurier'
   ],
   'Objets': [
+    // Électronique
     'téléphone', 'ordinateur', 'tablette', 'casque',
-    'montre', 'lunettes', 'parapluie', 'valise',
-    'sac', 'lampe', 'canapé', 'fauteuil',
-    'table', 'chaise', 'lit', 'armoire',
-    'étagère', 'miroir', 'horloge', 'pendule',
-    'agenda', 'stylo', 'crayon', 'gomme',
-    'règle', 'compas', 'équerre', 'rapporteur',
-    'thermomètre', 'balance'
+    'montre', 'appareil photo', 'imprimante', 'télévision',
+    // Meubles
+    'canapé', 'fauteuil', 'table', 'chaise',
+    'lit', 'armoire', 'étagère', 'bureau',
+    'commode', 'bibliothèque',
+    // Ustensiles
+    'parapluie', 'valise', 'sac', 'lampe',
+    'stylo', 'crayon', 'ciseaux', 'marteau',
+    'tournevis', 'clé',
+    // Maison
+    'horloge', 'miroir', 'cadre', 'vase',
+    'bougie', 'coussin', 'tapis', 'rideau',
+    // Instruments
+    'règle', 'compas', 'thermomètre', 'balance',
+    'télescope', 'microscope', 'jumelles', 'boussole',
+    'fermeture éclair', 'agrafeuse', 'punaise', 'trombone',
+    'éponge', 'serpillière', 'balai', 'poubelle', 'boîte',
+    'ficelle', 'corde'
   ],
   'Nature': [
-    'nuage', 'orage', 'tempête', 'ouragan',
-    'cyclone', 'tornade', 'tsunami', 'séisme',
-    'avalanche', 'éboulement', 'volcan', 'éruption',
-    'cascade', 'geyser', 'glacier', 'dune',
-    'oasis', 'désert', 'jungle', 'forêt',
-    'rivière', 'fleuve', 'lac', 'mer',
-    'océan', 'île', 'archipel', 'péninsule',
-    'cap', 'détroit'
+    // Phénomènes
+    'nuage', 'orage', 'tempête', 'arc-en-ciel',
+    'tonnerre', 'éclair', 'pluie', 'neige',
+    'brume', 'vent', 'soleil', 'lune',
+    // Reliefs
+    'volcan', 'cascade', 'glacier', 'dune',
+    'oasis', 'désert', 'montagne', 'plage',
+    // Écosystèmes
+    'forêt', 'rivière', 'fleuve', 'lac',
+    'mer', 'océan', 'île', 'jungle',
+    // Géographie simple
+    'vallée', 'plaine', 'colline', 'rocher',
+    'source', 'étang', 'crique', 'grotte',
+    'falaise', 'pré', 'champ', 'verger',
+    // Espace
+    'étoile', 'planète', 'comète', 'galaxie',
+    'lever du soleil', 'coucher du soleil', 'aube', 'crépuscule',
+    'écume', 'marée', 'vague', 'sable', 'coquillage',
+    'corail', 'algue'
+  ],
+  'Nourriture': [
+    // Plats
+    'pizza', 'burger', 'sushi', 'croissant',
+    'baguette', 'crêpe', 'paella', 'tartiflette',
+    'raclette', 'fondue', 'lasagnes', 'couscous',
+    'tacos', 'sandwich', 'salade',
+    // Fruits
+    'pomme', 'banane', 'fraise', 'citron',
+    'orange', 'raisin', 'pastèque', 'ananas',
+    'mangue', 'kiwi', 'pêche', 'cerise',
+    // Légumes
+    'tomate', 'carotte', 'brocoli', 'salade',
+    'champignon', 'maïs', 'petit pois',
+    // Desserts
+    'tarte', 'gâteau', 'glace', 'mousse',
+    'macaron', 'mille-feuille', 'crème brûlée',
+    // Boissons
+    'café', 'thé', 'chocolat chaud', 'limonade',
+    'jus d\'orange', 'eau pétillante',
+    'soda', 'milkshake', 'smoothie', 'sirop',
+    'confiture', 'miel', 'beurre', 'fromage'
   ],
   'Divers': [
+    // Véhicules
     'bateau', 'voilier', 'sous-marin', 'hélicoptère',
-    'montgolfière', 'parachute', 'trampoline', 'balançoire',
-    'toboggan', 'manège', 'phare', 'clocher',
-    'église', 'cathédrale', 'mosquée', 'temple',
-    'pagode', 'gratte-ciel', 'immeuble', 'villa',
-    'manoir', 'cabane', 'yourte', 'igloo',
-    'tipi', 'château-fort', 'donjon', 'rempart',
-    'bastille', 'arc de triomphe'
+    'montgolfière', 'parachute', 'trampoline',
+    // Bâtiments
+    'phare', 'église', 'cathédrale', 'mosquée',
+    'gratte-ciel', 'villa', 'manoir', 'cabane',
+    'château-fort', 'igloo',
+    // Monuments
+    'pyramide', 'arc de triomphe', 'statue', 'obélisque',
+    'colonne', 'pont', 'tour',
+    // Sports
+    'football', 'basketball', 'tennis', 'volleyball',
+    'natation', 'escalade', 'vélo', 'ski',
+    'surf', 'équitation',
+    // Loisirs
+    'balançoire', 'manège', 'toboggan', 'cerf-volant',
+    'jeu de société', 'puzzle', 'dé', 'carte',
+    'instrument', 'masque', 'déguisement', 'chapeau',
+    'gant', 'écharpe', 'ceinture', 'bague',
+    'collier', 'marionnette', 'harmonica', 'accordéon',
+    'scie'
   ]
 };
 

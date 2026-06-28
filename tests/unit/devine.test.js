@@ -211,7 +211,7 @@ test('getPublicState — winner null en solo', () => {
   assert.strictEqual(state.winner, null);
 });
 
-test('MOTS — liste complète (260)', () => {
+test('MOTS — liste complète (496)', () => {
   assert.ok(Array.isArray(MOTS));
-  assert.strictEqual(MOTS.length, 260);
+  assert.strictEqual(MOTS.length, 496);
 });
