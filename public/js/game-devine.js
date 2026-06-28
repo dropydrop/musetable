@@ -39,6 +39,7 @@ function pollNow() {
 // ============================================================
 
 window.devine.renderer = function(gs) {
+  console.log('[Devine] renderer called phase=%s motCourant=%s gameType=%s boardExiste=%s', gs?.phase, gs?.motCourant, gs?.gameType, !!window.dom.board);
   if (!gs) return;
   injectDevineCSS();
 

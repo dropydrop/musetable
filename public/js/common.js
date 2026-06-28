@@ -274,9 +274,16 @@ window.pollGameState = async function() {
     // Mettre à jour la liste des joueurs dans la salle d'attente
     if (gs.phase === 'waiting') renderWaitingPlayers(gs);
     // Dispatch vers le renderer du mode de jeu actif
+    console.log('[MuseTable] poll gameType=%s mode=%O renderer=%s', gs.gameType, window[gs.gameType], typeof (window[gs.gameType]?.renderer));
     const mode = window[gs.gameType];
-    if (mode && mode.renderer) mode.renderer(gs);
-  } catch (_) {}
+    if (mode && mode.renderer) {
+      console.log('[MuseTable] calling renderer for phase=%s', gs.phase);
+      mode.renderer(gs);
+      console.log('[MuseTable] renderer done, board.innerHTML.length=%d', window.dom.board?.innerHTML?.length || 0);
+    } else {
+      console.warn('[MuseTable] NO renderer for gameType=%s', gs.gameType);
+    }
+  } catch (e) { console.error('[MuseTable] poll error:', e); }
 };
 
 // Afficher/masquer config Devine Tête
@@ -349,7 +356,10 @@ function bindRoomEvents() {
       body.timerPerTour = window.state.devineConfig.timerPerTour;
       body.motsParTour = window.state.devineConfig.motsParTour;
     }
-    try { await window.api('POST', '/api/start-game', body); }
+    try {
+      await window.api('POST', '/api/start-game', body);
+      window.pollGameState(); // poll immédiat après start
+    }
     catch (e) { window.showToast('Erreur : ' + e.message); }
   });
 
