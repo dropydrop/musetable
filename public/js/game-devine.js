@@ -295,7 +295,8 @@ function startDevineTimer() {
   stopDevineTimer();
   _devineTimerInterval = setInterval(() => {
     _devineTimerValue = Math.max(0, _devineTimerValue - 1);
-    document.getElementById('devine-timer')?.textContent = _devineTimerValue;
+    const timerEl = document.getElementById('devine-timer');
+    if (timerEl) timerEl.textContent = _devineTimerValue;
     const bar = document.getElementById('devine-progress-bar');
     if (bar) {
       const parent = bar.parentElement;

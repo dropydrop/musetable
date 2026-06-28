@@ -194,7 +194,7 @@ window.showLobby = function() {
   window._currentGameMode = null;
   window.stopPolling();
   window.showScreen('screen-lobby');
-  window.dom['result-overlay'].classList.remove('show');
+  if (window.dom['result-overlay']) window.dom['result-overlay'].classList.remove('show');
 };
 
 window.showRoom = function(roomCode) {
