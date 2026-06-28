@@ -11,6 +11,9 @@ const devineStyle = `
   @keyframes pulse{0%,100%{opacity:0.5}50%{opacity:1}}
   .devine-progress{height:6px;background:#333;border-radius:3px;margin:12px 16px;overflow:hidden}
   .devine-progress-bar{height:100%;border-radius:3px;transition:width 0.3s,background 0.5s}
+  .devine-config-row{display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0}
+  .devine-config-row label{color:var(--muted);font-size:.85rem}
+  .devine-config-row select{background:var(--card);color:var(--text);padding:8px 12px;border-radius:8px;font-size:.9rem;border:none;cursor:pointer}
 `;
 
 function injectDevineCSS() {
@@ -26,8 +29,13 @@ let _devineTimerInterval = null;
 let _devineTimerValue = 0;
 let _devineLock = false;
 
+// Poll immédiat après action pour fluidité
+function pollNow() {
+  setTimeout(window.pollGameState, 50);
+}
+
 // ============================================================
-// RENDERER — appelé à chaque polling (toutes les ~2s)
+// RENDERER
 // ============================================================
 
 window.devine.renderer = function(gs) {
@@ -42,12 +50,12 @@ window.devine.renderer = function(gs) {
   const board = window.dom.board;
   board.innerHTML = '';
 
-  // Détecter transition de phase
   const oldPhase = board.dataset.devinePhase;
   if (oldPhase !== gs.phase) {
     board.dataset.devinePhase = gs.phase;
     if (gs.phase === 'TURN_PLAYING') {
       _devineTimerValue = gs.timerRestant || 0;
+      window._lastTimerTotal = gs.config.timerPerTour;
       startDevineTimer();
     } else {
       stopDevineTimer();
@@ -67,9 +75,7 @@ window.devine.renderer = function(gs) {
       el.style.cssText = 'border-color:var(--gold);text-align:center;padding:40px 16px';
       el.innerHTML = `
         <div style="font-size:1.5rem;margin-bottom:24px">🤯 Au tour de ${guesserLabel} !</div>
-        <div class="devine-start-info">
-          ⏱ ${gs.config.timerPerTour}s &nbsp;·&nbsp; 📝 ${gs.config.motsParTour} mots
-        </div>
+        ${devineConfigHTML(gs)}
         <button class="btn-gold" id="devine-btn-start" style="font-size:1.3rem;padding:16px 48px">
           🟢 Commencer
         </button>
@@ -80,7 +86,6 @@ window.devine.renderer = function(gs) {
 
     // ==================== TURN_PLAYING ====================
     case 'TURN_PLAYING': {
-      // Sync timer with backend value on each poll
       if (gs.timerRestant !== undefined && gs.timerRestant < _devineTimerValue) {
         _devineTimerValue = gs.timerRestant;
       }
@@ -148,7 +153,6 @@ window.devine.renderer = function(gs) {
       const nbPlayers = gs.playerOrder?.length || 1;
       const isSolo = nbPlayers <= 1;
 
-      // Scores par joueur (triés)
       const sorted = [];
       for (const id of gs.playerOrder || []) {
         const s = gs.scores?.[id];
@@ -156,7 +160,6 @@ window.devine.renderer = function(gs) {
       }
       sorted.sort((a, b) => b.trouve - a.trouve);
 
-      // Record localStorage (solo)
       let recordMsg = '';
       if (isSolo && sorted.length > 0) {
         const current = sorted[0].trouve;
@@ -193,7 +196,8 @@ window.devine.renderer = function(gs) {
         <div style="font-size:2rem;font-weight:800;margin-bottom:16px">🏆 Manche terminée !</div>
         ${podiumHtml}
         ${recordMsg}
-        <div style="margin-top:24px">
+        ${devineConfigHTML(gs)}
+        <div style="margin-top:12px">
           <button class="btn-gold" id="devine-btn-replay" style="font-size:1.1rem;padding:14px 36px">
             🔄 Nouvelle manche
           </button>
@@ -216,7 +220,44 @@ window.devine.renderer = function(gs) {
     ? '🤯 En cours' : gs.phase === 'ALL_DONE' ? 'Terminé !' : '';
 
   setDevineControls(gs);
+  bindDevineConfig();
 };
+
+// HTML des sélecteurs de config timer/mots
+function devineConfigHTML(gs) {
+  const cur = gs.config || { timerPerTour: 45, motsParTour: 6 };
+  const tOpts = [30, 45, 60].map(v =>
+    `<option value="${v}"${v === cur.timerPerTour ? ' selected' : ''}>${v}s</option>`
+  ).join('');
+  const mOpts = [4, 6, 8, 10].map(v =>
+    `<option value="${v}"${v === cur.motsParTour ? ' selected' : ''}>${v}</option>`
+  ).join('');
+  return `
+    <div class="devine-config-row">
+      <label>⏱</label>
+      <select id="devine-cfg-timer">${tOpts}</select>
+      <label>📝</label>
+      <select id="devine-cfg-mots">${mOpts}</select>
+    </div>
+  `;
+}
+
+// Lier les changements de config → window.state.devineConfig
+function bindDevineConfig() {
+  const t = document.getElementById('devine-cfg-timer');
+  const m = document.getElementById('devine-cfg-mots');
+  if (t && m) {
+    const update = () => {
+      window.state.devineConfig = {
+        timerPerTour: parseInt(t.value),
+        motsParTour: parseInt(m.value)
+      };
+    };
+    t.onchange = update;
+    m.onchange = update;
+    update();
+  }
+}
 
 // ============================================================
 // CONTROLS
@@ -227,14 +268,9 @@ function setDevineControls(gs) {
   c.innerHTML = '';
   if (window.state.isSpectator) return;
 
-  // --- TURN_START: Commencer ---
   const btnStart = document.getElementById('devine-btn-start');
-  if (btnStart) {
-    btnStart.addEventListener('click', () => window.devine.startTurn());
-    return;
-  }
+  if (btnStart) { btnStart.addEventListener('click', () => window.devine.startTurn()); return; }
 
-  // --- TURN_PLAYING: Trouvé / Passer ---
   const btnTrouve = document.getElementById('devine-btn-trouve');
   const btnPasse = document.getElementById('devine-btn-passe');
   if (btnTrouve && btnPasse) {
@@ -243,19 +279,11 @@ function setDevineControls(gs) {
     return;
   }
 
-  // --- TURN_DONE: Joueur suivant ---
   const btnNext = document.getElementById('devine-btn-next');
-  if (btnNext) {
-    btnNext.addEventListener('click', () => window.devine.nextTurn());
-    return;
-  }
+  if (btnNext) { btnNext.addEventListener('click', () => window.devine.nextTurn()); return; }
 
-  // --- ALL_DONE: Nouvelle manche ---
   const btnReplay = document.getElementById('devine-btn-replay');
-  if (btnReplay) {
-    btnReplay.addEventListener('click', () => window.devine.replay());
-    return;
-  }
+  if (btnReplay) { btnReplay.addEventListener('click', () => window.devine.replay()); return; }
 }
 
 // ============================================================
@@ -266,22 +294,21 @@ function startDevineTimer() {
   stopDevineTimer();
   _devineTimerInterval = setInterval(() => {
     _devineTimerValue = Math.max(0, _devineTimerValue - 1);
-    const el = document.getElementById('devine-timer');
-    if (el) el.textContent = _devineTimerValue;
+    document.getElementById('devine-timer')?.textContent = _devineTimerValue;
     const bar = document.getElementById('devine-progress-bar');
     if (bar) {
-      const pctEl = document.getElementById('devine-timer');
-      // Recalc percentage from parent's config (stored in DOM or re-fetched)
-      // Simple approach: just shrink bar proportionally
       const parent = bar.parentElement;
-      // We'll just poll-based update instead
+      const pct = Math.round((_devineTimerValue / window._lastTimerTotal) * 100);
+      bar.style.width = pct + '%';
+      bar.style.background = pct > 50 ? 'var(--green)' : pct > 25 ? 'orange' : 'var(--red)';
     }
     if (_devineTimerValue <= 0) {
       stopDevineTimer();
-      // Timer expired → end turn
       window.devine.endTurn();
     }
   }, 1000);
+  // Store total for bar updates
+  window._lastTimerTotal = _devineTimerValue;
 }
 
 function stopDevineTimer() {
@@ -312,13 +339,14 @@ function handleOrientation(e) {
 }
 
 // ============================================================
-// API CALLS
+// API CALLS — chaque appel déclenche un poll immédiat
 // ============================================================
 
 window.devine.startTurn = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/devine/start-turn', { roomCode: window.state.roomCode });
+    pollNow();
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 
@@ -329,6 +357,7 @@ window.devine.doAction = async function(actionType) {
     await window.api('POST', '/api/devine/action', {
       roomCode: window.state.roomCode, actionType
     });
+    pollNow();
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 
@@ -336,13 +365,15 @@ window.devine.endTurn = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/devine/end-turn', { roomCode: window.state.roomCode });
-  } catch (e) { /* ignore — already handled by backend */ }
+    pollNow();
+  } catch (e) { /* ignore */ }
 };
 
 window.devine.nextTurn = async function() {
   if (!window.state.roomCode) return;
   try {
     await window.api('POST', '/api/devine/next-turn', { roomCode: window.state.roomCode });
+    pollNow();
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 
@@ -355,6 +386,7 @@ window.devine.replay = async function() {
       timerPerTour: cfg.timerPerTour,
       motsParTour: cfg.motsParTour
     });
+    pollNow();
   } catch (e) { window.showToast('Erreur : ' + e.message); }
 };
 
@@ -372,7 +404,6 @@ function showDevineFeedback(type) {
 
 window.devine.init = function() {
   injectDevineCSS();
-  // Accéléromètre
   if (window.DeviceOrientationEvent) {
     window.addEventListener('deviceorientation', handleOrientation);
   }
