@@ -279,12 +279,30 @@ window.pollGameState = async function() {
   } catch (_) {}
 };
 
+// Afficher/masquer config Devine Tête
+function toggleDevineConfig() {
+  const gameType = window.dom['input-game']?.value;
+  const cfg = window.$('devine-config');
+  if (cfg) cfg.style.display = gameType === 'devine' ? 'block' : 'none';
+}
+window.dom['input-game']?.addEventListener('change', toggleDevineConfig);
+
+// Stocker config Devine au passage en room
+function getDevineConfig() {
+  return {
+    timerPerTour: parseInt(window.$('devine-timer')?.value) || 45,
+    motsParTour: parseInt(window.$('devine-mots')?.value) || 6
+  };
+}
+
 // --- Événements lobby
 function bindLobbyEvents() {
+  toggleDevineConfig();
   window.dom['btn-create'].addEventListener('click', async () => {
     const name = window.dom['input-name'].value.trim() || 'Anonyme';
     const gameType = window.dom['input-game'] ? window.dom['input-game'].value : 'blackjack';
-    console.log('[MuseTable] Création salle — gameType:', gameType, '— input-game DOM:', window.dom['input-game']);
+    // Stocker la config Devine pour l'utiliser au start-game
+    if (gameType === 'devine') window.state.devineConfig = getDevineConfig();
     try {
       const createRes = await window.api('POST', '/api/create-room', { gameType });
       const joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
@@ -325,7 +343,13 @@ function bindLobbyEvents() {
 function bindRoomEvents() {
   window.dom['btn-start'].addEventListener('click', async () => {
     if (!window.state.roomCode) return;
-    try { await window.api('POST', '/api/start-game', { roomCode: window.state.roomCode }); }
+    const body = { roomCode: window.state.roomCode };
+    // Passer la config Devine si stockée
+    if (window.state.devineConfig) {
+      body.timerPerTour = window.state.devineConfig.timerPerTour;
+      body.motsParTour = window.state.devineConfig.motsParTour;
+    }
+    try { await window.api('POST', '/api/start-game', body); }
     catch (e) { window.showToast('Erreur : ' + e.message); }
   });
 

@@ -135,6 +135,25 @@ button:active{transform:scale(.96)}
         <option value="pyramide">🔺 Pyramide</option>
         <option value="bizkit">🎲 Bizkit</option>
       </select>
+      <div id="devine-config" style="display:none;margin-top:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="color:var(--muted);font-size:.85rem;white-space:nowrap">⏱ Timer</label>
+          <select id="devine-timer" style="flex:1">
+            <option value="30">30s</option>
+            <option value="45" selected>45s</option>
+            <option value="60">60s</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <label style="color:var(--muted);font-size:.85rem;white-space:nowrap">📝 Mots</label>
+          <select id="devine-mots" style="flex:1">
+            <option value="4">4</option>
+            <option value="6" selected>6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+      </div>
       <button class="btn-primary" id="btn-create">Créer une salle</button>
       <hr>
       <div class="row">

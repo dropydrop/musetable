@@ -284,8 +284,17 @@ module.exports = async (req, res) => {
       if (path === '/api/start-game' && req.method === 'POST') {
         await devine.start(room, body, res, games); return;
       }
+      if (path === '/api/devine/start-turn' && req.method === 'POST') {
+        await devine.doStartTurn(room, body, res, games); return;
+      }
       if (path === '/api/devine/action' && req.method === 'POST') {
         await devine.doAction(room, body, res, games); return;
+      }
+      if (path === '/api/devine/end-turn' && req.method === 'POST') {
+        await devine.doEndTurn(room, body, res, games); return;
+      }
+      if (path === '/api/devine/next-turn' && req.method === 'POST') {
+        await devine.doNextTurn(room, body, res, games); return;
       }
       if (path === '/api/devine/state' && req.method === 'GET') {
         await devine.state(room, body, res, games); return;
