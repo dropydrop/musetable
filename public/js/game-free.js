@@ -171,8 +171,7 @@ function setFreeControls() {
   const btns = [
     { id:'btn-free-draw', text:'🃏 Joueur pioche 1', cls:'btn-primary', action: window.free.drawCards },
     { id:'btn-free-deal', text:'♠ Distribuer 1 chacun', cls:'btn-green', action: window.free.dealCards },
-    { id:'btn-free-shuffle', text:'🔀 Mélanger le deck', cls:'btn-outline', action: window.free.shuffleDeck },
-    { id:'btn-free-reset', text:'🔄 Reset tout', cls:'btn-outline', action: window.free.resetGame }
+    { id:'btn-free-shuffle', text:'🔀 Mélanger le deck', cls:'btn-outline', action: window.free.shuffleDeck }
   ];
   btns.forEach(b => {
     const btn = document.createElement('button');
@@ -207,10 +206,10 @@ function setFreeControls() {
   rollBtn.className = 'btn-gold';
   rollBtn.addEventListener('click', window.free.rollDice);
 
+  diceRow.appendChild(rollBtn);
   diceRow.appendChild(minusBtn);
   diceRow.appendChild(countDisplay);
   diceRow.appendChild(plusBtn);
-  diceRow.appendChild(rollBtn);
   window.dom.controls.appendChild(diceRow);
 }
 
