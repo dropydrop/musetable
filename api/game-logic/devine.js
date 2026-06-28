@@ -28,7 +28,12 @@ function getCategorie(mot) {
 
 function startGame(room, body) {
   const timerPerTour = parseInt(body?.timerPerTour) || 45;
-  const motsParTour = parseInt(body?.motsParTour) || 8;
+  const motsParTour = parseInt(body?.motsParTour) || 6;
+
+  if (![30, 45, 60].includes(timerPerTour)) return { success: false, error: 'timerPerTour invalide (30/45/60)' };
+  if (![4, 6, 8, 10].includes(motsParTour)) return { success: false, error: 'motsParTour invalide (4/6/8/10)' };
+
+  room.phase = 'TURN_START';
 
   if (![30, 45, 60].includes(timerPerTour)) return { success: false, error: 'timerPerTour invalide (30/45/60)' };
   if (![4, 6, 8, 10].includes(motsParTour)) return { success: false, error: 'motsParTour invalide (4/6/8/10)' };

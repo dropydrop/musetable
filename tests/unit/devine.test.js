@@ -30,7 +30,7 @@ test('startGame — initialise la config avec les valeurs par défaut', () => {
   assert.ok(r.success);
   assert.strictEqual(room.phase, 'TURN_START');
   assert.strictEqual(room.config.timerPerTour, 45);
-  assert.strictEqual(room.config.motsParTour, 8);
+  assert.strictEqual(room.config.motsParTour, 6);
   assert.strictEqual(room.guesserId, 'id_Alice');
   assert.deepStrictEqual(Object.keys(room.scores), ['id_Alice']);
 });
@@ -72,7 +72,7 @@ test('startTurn — phase TURN_START → TURN_PLAYING', () => {
   assert.strictEqual(room.phase, 'TURN_PLAYING');
   assert.ok(r.mot);
   assert.strictEqual(room.indexActuel, 0);
-  assert.strictEqual(room.mots.length, 8);
+  assert.strictEqual(room.mots.length, 6);
 });
 
 test('startTurn — échoue si mauvaise phase', () => {

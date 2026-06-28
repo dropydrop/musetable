@@ -128,6 +128,9 @@ module.exports = async (req, res) => {
       } else if (room.gameType === 'tarot') {
         const { getPublicState } = require('./game-logic/tarot.js');
         gs = getPublicState(room);
+      } else if (room.gameType === 'devine') {
+        const { getPublicState } = require('./game-logic/devine.js');
+        gs = getPublicState(room);
       } else {
         gs = {
           roomCode: url.searchParams.get('room'),
