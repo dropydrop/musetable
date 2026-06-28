@@ -233,8 +233,6 @@ function startGame(room, body) {
   }
   room.mots = shuffle([...MOTS]).slice(0, room.config.motsParTour);
   room.indexActuel = 0;
-  room.timestampDebutTour = Date.now();
-  room.phase = 'TURN_PLAYING';
   room.historique = [];
 
   return { success: true };
