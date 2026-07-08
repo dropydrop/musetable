@@ -152,7 +152,7 @@ function btRender() {
   if (st.phase === 'blind_intro') btRenderIntro(board);
   else if (st.phase === 'round_active') { btRenderHand(board); btRenderSelected(board); btRenderHint(board); }
   else if (st.phase === 'hand_evaluation') btRenderEval(board);
-  else if (st.phase === 'round_won') btRenderWon(board);
+  else if (st.phase === 'victory_payout') btRenderVictory(board);
   else if (st.phase === 'game_over') btRenderGameOver(board);
   btUpdateControls();
 }
@@ -249,6 +249,12 @@ function btToggle(i) {
   btRender();
 }
 
+function btDeckFill() {
+  const st = window.balatrow.state;
+  if (!st) return;
+  if (st.deck.length < 8) st.deck = btCreateDeck();
+}
+
 function btRenderEval(board) {
   const st = window.balatrow.state;
   const sec = document.createElement('div');
@@ -272,7 +278,7 @@ function btRenderEval(board) {
   setTimeout(btAdvance, 1500);
 }
 
-function btRenderWon(board) {
+function btRenderVictory(board) {
   const st = window.balatrow.state;
   const el = document.createElement('div');
   el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;padding:40px;text-align:center';
@@ -328,10 +334,10 @@ function btRenderGameOver(board) {
 function btAdvance() {
   const st = window.balatrow.state;
   if (!st || st.phase !== 'hand_evaluation') return;
+  btDeckFill();
   const idxs = st.selected.slice().sort((a,b) => b - a);
   for (const idx of idxs) {
-    if (st.deck.length > 0) st.hand[idx] = st.deck.pop();
-    else st.hand.splice(idx, 1);
+    st.hand[idx] = st.deck.pop();
   }
   st.selected = [];
   if (st.score >= st.roundTarget) {
@@ -344,7 +350,7 @@ function btAdvance() {
       st.level++;
       st.levelTarget = Math.round(st.levelTarget * 1.6);
     }
-    st.phase = 'round_won';
+    st.phase = 'victory_payout';
     btRender();
     return;
   }
@@ -411,10 +417,10 @@ function btPlay() {
 function btDiscard() {
   const st = window.balatrow.state;
   if (!st || st.phase !== 'round_active' || st.selected.length === 0 || st.discardsLeft <= 0) return;
+  btDeckFill();
   const idxs = st.selected.slice().sort((a,b) => b - a);
   for (const idx of idxs) {
-    if (st.deck.length > 0) st.hand[idx] = st.deck.pop();
-    else st.hand.splice(idx, 1);
+    st.hand[idx] = st.deck.pop();
   }
   st.selected = [];
   st.discardsLeft--;
