@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
       const code = generateRoomCode(c => !!games[c]);
       const { gameType } = await parseBody();
       const type = gameType || 'blackjack';
-      const soloTypes = ['free', 'balatrow'];
+      const soloTypes = ['free', 'balatrow', 'roulette'];
       games[code] = {
         players: {},
         deck: createShuffledDeck(),
@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
     // POST /api/join-room
     if (path === '/api/join-room' && req.method === 'POST') {
       const { playerName } = body;
-      if (room.phase !== 'waiting' && room.gameType !== 'free' && room.gameType !== 'balatrow') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
+      if (room.phase !== 'waiting' && room.gameType !== 'free' && room.gameType !== 'balatrow' && room.gameType !== 'roulette') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
       if (Object.keys(room.players).length >= 10) { res.status(400).json({ success: false, error: 'Salle pleine (max 10)' }); return; }
 
       const id = generatePlayerId();
@@ -330,6 +330,15 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/pyramide/state' && req.method === 'GET') {
         await pyramide.state(room, body, res, games); return;
+      }
+    }
+
+    // --- Roulette (client-side solo) ---
+    if (room.gameType === 'roulette') {
+      if (path === '/api/start-game' && req.method === 'POST') {
+        room.phase = 'betting_phase';
+        res.status(200).json({ success: true });
+        return;
       }
     }
 
