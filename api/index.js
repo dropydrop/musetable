@@ -51,11 +51,12 @@ module.exports = async (req, res) => {
       const code = generateRoomCode(c => !!games[c]);
       const { gameType } = await parseBody();
       const type = gameType || 'blackjack';
+      const soloTypes = ['free', 'balatrow'];
       games[code] = {
         players: {},
         deck: createShuffledDeck(),
         currentTurn: null,
-        phase: type === 'free' ? 'playing' : 'waiting',
+        phase: soloTypes.includes(type) ? 'playing' : 'waiting',
         gameType: type,
         turnIndex: 0,
         playerOrder: [],
@@ -95,7 +96,7 @@ module.exports = async (req, res) => {
     // POST /api/join-room
     if (path === '/api/join-room' && req.method === 'POST') {
       const { playerName } = body;
-      if (room.phase !== 'waiting' && room.gameType !== 'free') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
+      if (room.phase !== 'waiting' && room.gameType !== 'free' && room.gameType !== 'balatrow') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
       if (Object.keys(room.players).length >= 10) { res.status(400).json({ success: false, error: 'Salle pleine (max 10)' }); return; }
 
       const id = generatePlayerId();
@@ -166,7 +167,7 @@ module.exports = async (req, res) => {
 
     // POST /api/reset
     if (path === '/api/reset' && req.method === 'POST') {
-      room.phase = room.gameType === 'free' ? 'playing' : 'waiting';
+      room.phase = (room.gameType === 'free' || room.gameType === 'balatrow') ? 'playing' : 'waiting';
       room.deck = createShuffledDeck();
       room.currentTurn = null;
       room.turnIndex = 0;
