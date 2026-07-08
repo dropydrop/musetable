@@ -312,7 +312,15 @@ function bindLobbyEvents() {
     if (gameType === 'devine') window.state.devineConfig = getDevineConfig();
     try {
       const createRes = await window.api('POST', '/api/create-room', { gameType });
-      const joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
+      let joinRes;
+      try {
+        joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
+      } catch (joinErr) {
+        // Retry 1x après 500ms (résilience Vercel cold-start)
+        console.warn('[MuseTable] join-room retry after:', joinErr.message);
+        await new Promise(r => setTimeout(r, 500));
+        joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
+      }
       window.state.playerId = joinRes.playerId;
       window.state.playerName = name;
       window.state.isSpectator = false;

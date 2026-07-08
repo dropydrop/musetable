@@ -51,12 +51,11 @@ module.exports = async (req, res) => {
       const code = generateRoomCode(c => !!games[c]);
       const { gameType } = await parseBody();
       const type = gameType || 'blackjack';
-      const soloTypes = ['free', 'balatrow', 'roulette'];
       games[code] = {
         players: {},
         deck: createShuffledDeck(),
         currentTurn: null,
-        phase: soloTypes.includes(type) ? 'playing' : 'waiting',
+        phase: 'waiting',
         gameType: type,
         turnIndex: 0,
         playerOrder: [],
@@ -77,6 +76,7 @@ module.exports = async (req, res) => {
 
     // --- Routes avec salle ---
     const body = await parseBody();
+    console.log('[MuseTable] req path=%s method=%s roomCode=%s gamesCount=%d', path, req.method, body?.roomCode || url.searchParams.get('room'), Object.keys(games).length);
     const room = getRoom(path, body, url, games);
     if (!room) {
       if (path === '/api/join-room' || path === '/api/leave-room' || path === '/api/game-state' ||
@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
     // POST /api/join-room
     if (path === '/api/join-room' && req.method === 'POST') {
       const { playerName } = body;
-      if (room.phase !== 'waiting' && room.gameType !== 'free' && room.gameType !== 'balatrow' && room.gameType !== 'roulette') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
+      if (room.phase !== 'waiting') { res.status(400).json({ success: false, error: 'Partie déjà commencée' }); return; }
       if (Object.keys(room.players).length >= 10) { res.status(400).json({ success: false, error: 'Salle pleine (max 10)' }); return; }
 
       const id = generatePlayerId();
@@ -167,7 +167,7 @@ module.exports = async (req, res) => {
 
     // POST /api/reset
     if (path === '/api/reset' && req.method === 'POST') {
-      room.phase = (room.gameType === 'free' || room.gameType === 'balatrow') ? 'playing' : 'waiting';
+      room.phase = 'waiting';
       room.deck = createShuffledDeck();
       room.currentTurn = null;
       room.turnIndex = 0;
@@ -183,6 +183,20 @@ module.exports = async (req, res) => {
       }
       res.status(200).json({ success: true });
       return;
+    }
+
+    // --- Route start-game générique (jeux sans handler spécifique)
+    if (path === '/api/start-game' && req.method === 'POST') {
+      if (room.gameType === 'free' || room.gameType === 'balatrow') {
+        room.phase = 'playing';
+        res.status(200).json({ success: true });
+        return;
+      }
+      if (room.gameType === 'roulette') {
+        room.phase = 'betting_phase';
+        res.status(200).json({ success: true });
+        return;
+      }
     }
 
     // --- Routes spécifiques au Blackjack ---
@@ -330,15 +344,6 @@ module.exports = async (req, res) => {
       }
       if (path === '/api/pyramide/state' && req.method === 'GET') {
         await pyramide.state(room, body, res, games); return;
-      }
-    }
-
-    // --- Roulette (client-side solo) ---
-    if (room.gameType === 'roulette') {
-      if (path === '/api/start-game' && req.method === 'POST') {
-        room.phase = 'betting_phase';
-        res.status(200).json({ success: true });
-        return;
       }
     }
 
