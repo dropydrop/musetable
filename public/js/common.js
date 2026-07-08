@@ -26,14 +26,33 @@ function initDom() {
   ids.forEach(id => window.dom[id] = window.$(id));
 }
 
-// --- API
-window.api = async (method, path, body) => {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(window.API_BASE + path, opts);
-  const data = await r.json();
-  if (!data.success) throw new Error(data.error || 'Erreur serveur');
-  return data;
+// --- API (retry global + pending flag)
+window._apiPending = false;
+window.api = async (method, path, body, retries = 2) => {
+  window._apiPending = true;
+  let lastErr;
+  try {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (body) opts.body = JSON.stringify(body);
+        const r = await fetch(window.API_BASE + path, opts);
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Erreur serveur');
+        return data;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < retries) {
+          const delay = attempt === 0 ? 200 : 500;
+          console.warn('[MuseTable] retry %s %s (%d/%d): %s', method, path, attempt+1, retries, err.message);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+    }
+    throw lastErr;
+  } finally {
+    window._apiPending = false;
+  }
 };
 
 // --- UI
@@ -306,21 +325,14 @@ function getDevineConfig() {
 function bindLobbyEvents() {
   toggleDevineConfig();
   window.dom['btn-create'].addEventListener('click', async () => {
+    if (window._apiPending) return;
     const name = window.dom['input-name'].value.trim() || 'Anonyme';
     const gameType = window.dom['input-game'] ? window.dom['input-game'].value : 'blackjack';
     // Stocker la config Devine pour l'utiliser au start-game
     if (gameType === 'devine') window.state.devineConfig = getDevineConfig();
     try {
       const createRes = await window.api('POST', '/api/create-room', { gameType });
-      let joinRes;
-      try {
-        joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
-      } catch (joinErr) {
-        // Retry 1x après 500ms (résilience Vercel cold-start)
-        console.warn('[MuseTable] join-room retry after:', joinErr.message);
-        await new Promise(r => setTimeout(r, 500));
-        joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
-      }
+      const joinRes = await window.api('POST', '/api/join-room', { roomCode: createRes.roomCode, playerName: name });
       window.state.playerId = joinRes.playerId;
       window.state.playerName = name;
       window.state.isSpectator = false;
@@ -329,6 +341,7 @@ function bindLobbyEvents() {
   });
 
   window.dom['btn-join'].addEventListener('click', async () => {
+    if (window._apiPending) return;
     const code = window.dom['input-code'].value.trim();
     const name = window.dom['input-join-name'].value.trim() || 'Anonyme';
     if (code.length !== 4) return window.showToast('Code à 4 chiffres requis');
@@ -357,7 +370,7 @@ function bindLobbyEvents() {
 // --- Événements room
 function bindRoomEvents() {
   window.dom['btn-start'].addEventListener('click', async () => {
-    if (!window.state.roomCode) return;
+    if (window._apiPending || !window.state.roomCode) return;
     const body = { roomCode: window.state.roomCode };
     // Passer la config Devine si stockée
     if (window.state.devineConfig) {
@@ -425,12 +438,22 @@ function bindGameNavEvents() {
   });
 
   window.dom['btn-reset-session'].addEventListener('click', async () => {
-    if (!window.state.roomCode) return;
+    if (window._apiPending || !window.state.roomCode) return;
     try {
       await window.api('POST', '/api/reset', { roomCode: window.state.roomCode });
       window.showToast('Session réinitialisée');
     } catch (e) { window.showToast('Erreur : ' + e.message); }
   });
+}
+
+// --- Keep-alive / warm-up
+function startKeepAlive() {
+  // Ping au chargement (préchauffe Vercel cold-start)
+  fetch(window.API_BASE + '/api/game-state?warmup=1').catch(() => {});
+  // Timer 30s tant que phase lobby
+  setInterval(() => {
+    if (window.state.phase === 'lobby') fetch(window.API_BASE + '/api/game-state?warmup=1').catch(() => {});
+  }, 30000);
 }
 
 // --- Enter key
@@ -449,4 +472,5 @@ bindFullscreen();
 bindAnonyme();
 bindCopy();
 bindEnterKeys();
+startKeepAlive();
 window.showLobby();

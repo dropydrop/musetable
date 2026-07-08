@@ -74,6 +74,12 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // --- Warmup ping (avant getRoom, pas de roomCode nécessaire)
+    if (path === '/api/game-state' && req.method === 'GET' && url.searchParams.get('warmup')) {
+      res.status(200).json({ success: true, warmup: true });
+      return;
+    }
+
     // --- Routes avec salle ---
     const body = await parseBody();
     console.log('[MuseTable] req path=%s method=%s roomCode=%s gamesCount=%d', path, req.method, body?.roomCode || url.searchParams.get('room'), Object.keys(games).length);
