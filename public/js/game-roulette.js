@@ -140,6 +140,7 @@ function injectRCSS() {
 // ===================== RENDERER =====================
 window.roulette.renderer = function(gs) {
   if (!gs) return;
+  window.roulette.lastGs = gs;
   injectRCSS();
   const st = window.roulette.state;
   if (!st) { initState(); return; }
@@ -163,6 +164,10 @@ window.roulette.renderer = function(gs) {
 
   window.dom['game-status'].textContent = st.phase === 'spinning' ? '🎡 Tirage en cours…' : st.phase === 'game_over' ? '💀 Game Over' : '🎡 Placez votre pari';
   window.dom['game-status'].className = 'game-status ' + (st.phase === 'game_over' ? 'lost' : 'waiting');
+};
+
+window.roulette.rerender = function() {
+  if (window.roulette.lastGs) window.roulette.renderer(window.roulette.lastGs);
 };
 
 function renderDash(board, st) {
@@ -435,12 +440,12 @@ window.roulette.setBetType = function(v) {
   const st = window.roulette.state;
   if (st.phase !== 'betting_phase') return;
   st.betType = v;
-  // Default value for type
   if (v === '1') st.betValue = 17;
   else if (v === '2') st.betValue = 'rouge';
   else if (v === '3') st.betValue = 0;
   else if (v === '4') st.betValue = '2';
   saveState();
+  window.roulette.rerender();
 };
 
 window.roulette.setBetValue = function(v) {
@@ -448,6 +453,7 @@ window.roulette.setBetValue = function(v) {
   if (st.phase !== 'betting_phase') return;
   st.betValue = v;
   saveState();
+  window.roulette.rerender();
 };
 
 window.roulette.setBetAmount = function(v) {
@@ -455,6 +461,7 @@ window.roulette.setBetAmount = function(v) {
   if (st.phase !== 'betting_phase') return;
   st.betAmount = Math.min(v, st.balance);
   saveState();
+  window.roulette.rerender();
 };
 
 window.roulette.spin = function() {
@@ -466,6 +473,7 @@ window.roulette.spin = function() {
   }
 
   st.phase = 'spinning';
+  window.roulette.rerender();
 
   // Resolve bet value for tracking
   const resolvedVal = st.betType === '2' ? (st.betValue === 'rouge' ? 'rouge' : 'noir')
@@ -496,6 +504,7 @@ window.roulette.spin = function() {
 
     st.phase = st.balance <= 0 ? 'game_over' : 'betting_phase';
     saveState();
+    window.roulette.rerender();
   }, 1200);
 };
 
@@ -513,6 +522,7 @@ window.roulette.reset = function() {
     betAmount: 10
   };
   saveState();
+  window.roulette.rerender();
 };
 
 window.roulette.clearHistory = function() {
@@ -520,6 +530,7 @@ window.roulette.clearHistory = function() {
   window.roulette.state.lastResult = null;
   window.roulette.state.totalSpins = 0;
   saveState();
+  window.roulette.rerender();
 };
 
 // ===================== INIT =====================
